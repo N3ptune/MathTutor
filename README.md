@@ -9,7 +9,7 @@ An app that takes in user input in clear steps for a higher level math problem, 
 | 11/4/2025 | Worked on initial designs | 2.5 |
 | 11/17/2025 | Worked on cost plans  | 2 |
 | 11/24/2025 | System Architecture design | 4 |
-|  |  |  |
+| 11/25/2025  | Home page and login UI mock | 4 |
 |  |  |  |
 |  |  |  |
 |  |  |  |
@@ -19,7 +19,7 @@ An app that takes in user input in clear steps for a higher level math problem, 
 |  |  |  |
 |  |  |  |
 
-**Total: 8.5**
+**Total: 12.5**
 
 ## ✅ Project Development Checklist
 
@@ -41,16 +41,16 @@ A checklist to track progress across all parts of the system (frontend, backend,
 
 ### Core Setup
 
-- [ ] Initialize React app
-- [ ] Install dependencies (React Router, Axios, Tailwind, etc.)
+- [X] Initialize React app
+- [X] Install dependencies (React Router, Axios, Tailwind, etc.)
 - [ ] Set up global state management (Zustand / Redux)
-- [ ] Configure route structure
+- [X] Configure route structure
 - [ ] Add reusable layout components
 
 ### UI Screens
 
-- [ ] Home / Landing Page
-- [ ] Login / Signup UI
+- [X] Home / Landing Page
+- [X] Login / Signup UI
 - [ ] Dashboard (progress overview)
 - [ ] Problem Input Flow (multi-step wizard)
 - [ ] AI Feedback / Results Page

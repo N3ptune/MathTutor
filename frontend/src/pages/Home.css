@@ -1,0 +1,111 @@
+/* Container */
+.home-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Main Title */
+.home-title {
+  font-size: 3rem; /* roughly text-5xl */
+  font-weight: 700;
+  color: #2563eb; /* blue-600 */
+  margin-bottom: 1rem;
+  z-index: 10;
+}
+
+/* Subtitle */
+.home-subtitle {
+  font-size: 1.5rem; /* roughly text-2xl */
+  color: #000000; /* blue-500 */
+  margin-bottom: 2.5rem;
+  z-index: 10;
+}
+
+/* Buttons container */
+.home-buttons {
+  display: flex;
+  gap: 1.5rem;
+  z-index: 10;
+}
+
+/* Button styles */
+.home-button {
+  background-color: #2563eb;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.home-button:hover {
+  background-color: #1d4ed8; /* darker blue */
+}
+
+/* Modal overlay */
+.home-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+/* Modal content */
+.home-modal {
+  position: relative; /* add this */
+  background-color: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.2);
+  width: 20rem;
+  text-align: center;
+}
+
+/* Modal heading */
+.home-modal h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+/* Modal close button */
+.home-modal button {
+  margin-top: 1rem;
+  color: #000000;
+  cursor: pointer;
+}
+
+/* Modal close button */
+.modal-close-button {
+  position: absolute;
+  top: 0.5rem;      /* distance from top of modal */
+  right: 0.5rem;    /* distance from right of modal */
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* Inputs inside modals */
+.modal-input {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+}

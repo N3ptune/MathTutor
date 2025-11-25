@@ -5,12 +5,13 @@
 ### 🧱 Repo, Frontend, Backend, and Basic Schema
 
 - [X] Create GitHub repository
-- [ ] Initialize React project (`create-react-app` or Vite)
-- [ ] Create basic React page structure:
-  - [ ] Home page
-  - [ ] Problem input page
-  - [ ] Results page
-  - [ ] History page
+- [X] Initialize React project (`create-react-app` or Vite)
+- [X] Create basic React page structure:
+  - [X] Home page
+  - [] Problem input page
+  - [] Results page
+  - [] History page
+  - [] Dashboard page
 - [ ] Initialize FastAPI backend
 - [ ] Create `/evaluate` endpoint (stub response)
 - [ ] Set up Firebase Auth (email/password only)

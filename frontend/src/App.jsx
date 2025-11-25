@@ -2,33 +2,43 @@ import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
+import ProblemInput from './pages/Problem_input.jsx'
+import Results from './pages/Results.jsx'
+import Home from './pages/Home.jsx'
+import History from './pages/History.jsx'
+import { AuthState } from './authState.js'
 
-function App() {
-  const [count, setCount] = useState(0)
+function AppContent() {
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      {!isHomePage && (
+        <nav style = {{display: "flex", gap: "1rem", padding: "1rem"}}>
+          <Link to = "/">Home</Link>
+          <Link to = "/input">Problem</Link>
+          <Link to = "/results">Results</Link>
+          <Link to = "/history">History</Link>
+        </nav>
+      )}
+
+      <Routes>
+        <Route path = "/" element = {<Home />} />
+        <Route path = "/input" element = {<ProblemInput/>} />
+        <Route path = "/results" element = {<Results />} />
+        <Route path = "/history" element = {<History />} />
+      </Routes>
     </>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   )
 }
 
