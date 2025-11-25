@@ -1,4 +1,5 @@
 # MathTutor
+
 An app that takes in user input in clear steps for a higher level math problem, and then passes the user input to AI in order to read through and determine if and where the user made a mistake in the solving of their problem. The user will receive a background proficiency rating per section of the class, and can generate reviews/study guides.  
 
 ## Time Tracking
@@ -22,21 +23,24 @@ An app that takes in user input in clear steps for a higher level math problem, 
 
 ## ✅ Project Development Checklist
 
-Use this checklist to track progress across all parts of the system (frontend, backend, AI pipeline, infra, deployment).
+A checklist to track progress across all parts of the system (frontend, backend, AI pipeline, infra, deployment).
 
 ---
 
 ## 📁 Project Setup
-- [ ] Initialize monorepo structure (`client/`, `server/`, `infrastructure/`)
-- [ ] Set up GitHub repository
+
+- [X] Initialize monorepo structure (`client/`, `server/`, `infrastructure/`)
+- [X] Set up GitHub repository
 - [ ] Add `.gitignore` for React, Python, and environment files
-- [ ] Create initial README with project overview
+- [X] Create initial README with project overview
 - [ ] Define environment variable structure (`.env.example`)
 
 ---
 
 ## 🎨 Frontend — React App (client/)
+
 ### Core Setup
+
 - [ ] Initialize React app
 - [ ] Install dependencies (React Router, Axios, Tailwind, etc.)
 - [ ] Set up global state management (Zustand / Redux)
@@ -44,6 +48,7 @@ Use this checklist to track progress across all parts of the system (frontend, b
 - [ ] Add reusable layout components
 
 ### UI Screens
+
 - [ ] Home / Landing Page
 - [ ] Login / Signup UI
 - [ ] Dashboard (progress overview)
@@ -53,6 +58,7 @@ Use this checklist to track progress across all parts of the system (frontend, b
 - [ ] User Settings Page
 
 ### Services & Utilities
+
 - [ ] API service wrapper
 - [ ] Firebase Auth integration
 - [ ] Reusable input components
@@ -62,7 +68,9 @@ Use this checklist to track progress across all parts of the system (frontend, b
 ---
 
 ## 🧠 Backend — Python API (server/)
+
 ### Setup
+
 - [ ] Create FastAPI project
 - [ ] Set up Poetry / pipenv for dependencies
 - [ ] Add OpenAI SDK, LangChain, NumPy, SymPy
@@ -70,6 +78,7 @@ Use this checklist to track progress across all parts of the system (frontend, b
 - [ ] Create environment variable loader
 
 ### API Endpoints
+
 - [ ] `/auth/login`
 - [ ] `/auth/register`
 - [ ] `/problems/submit`
@@ -79,6 +88,7 @@ Use this checklist to track progress across all parts of the system (frontend, b
 - [ ] `/admin/health`
 
 ### AI Processing Pipeline
+
 - [ ] Create LangChain pipeline for step-by-step evaluation
 - [ ] Implement symbolic math checks using SymPy
 - [ ] Implement mistake detection logic
@@ -88,7 +98,9 @@ Use this checklist to track progress across all parts of the system (frontend, b
 ---
 
 ## 🗄️ Database — PostgreSQL (server/db)
+
 ### Schema Setup
+
 - [ ] Create `users` table
 - [ ] Create `problem_attempts` table
 - [ ] Create `steps` table
@@ -98,6 +110,7 @@ Use this checklist to track progress across all parts of the system (frontend, b
 - [ ] Write initial SQL migrations
 
 ### ORM / Query Layer
+
 - [ ] Implement SQLAlchemy models
 - [ ] Implement repository classes
 - [ ] Add unit tests for DB access
@@ -105,6 +118,7 @@ Use this checklist to track progress across all parts of the system (frontend, b
 ---
 
 ## ☁️ Firebase Authentication
+
 - [ ] Configure Firebase project
 - [ ] Enable email/password auth
 - [ ] Connect Firebase to frontend
@@ -114,25 +128,31 @@ Use this checklist to track progress across all parts of the system (frontend, b
 ---
 
 ## 🪣 AWS Infrastructure (infrastructure/)
+
 ### S3
+
 - [ ] Create S3 bucket for static assets / files
 - [ ] Configure permissions & bucket policies
 
 ### EC2 / ECS
+
 - [ ] Provision compute resource for backend
 - [ ] Set up Docker environment
 - [ ] Configure auto-restart policies
 
 ### RDS
+
 - [ ] Create PostgreSQL instance
 - [ ] Configure backups
 - [ ] Enable IAM database authentication
 
 ### CloudFront
+
 - [ ] Connect S3 + CloudFront for frontend deployment
 - [ ] Add caching + HTTPS
 
 ### IAM & Security
+
 - [ ] Create roles for app services
 - [ ] Lock down access policies
 - [ ] Set up secrets in AWS Parameter Store
@@ -140,6 +160,7 @@ Use this checklist to track progress across all parts of the system (frontend, b
 ---
 
 ## 🔐 Authentication & Authorization
+
 - [ ] Token validation middleware in backend
 - [ ] Role system (admin/user)
 - [ ] Permission levels for endpoints
@@ -148,6 +169,7 @@ Use this checklist to track progress across all parts of the system (frontend, b
 ---
 
 ## 🔄 CI/CD — GitHub Actions
+
 - [ ] Set up linting & formatting checks
 - [ ] Add unit test workflow (client + server)
 - [ ] Build React on push to main
@@ -158,17 +180,21 @@ Use this checklist to track progress across all parts of the system (frontend, b
 ---
 
 ## 🧪 Testing
+
 ### Frontend
+
 - [ ] Component tests
 - [ ] Workflow tests for problem submission
 - [ ] Snapshot tests
 
 ### Backend
+
 - [ ] Unit tests for logic & AI pipeline
 - [ ] Endpoint integration tests
 - [ ] DB tests with test container
 
 ### End-to-End
+
 - [ ] User login flow
 - [ ] Submit math problem
 - [ ] AI detects mistake
@@ -178,6 +204,7 @@ Use this checklist to track progress across all parts of the system (frontend, b
 ---
 
 ## 📈 Monitoring & Logging
+
 - [ ] Configure CloudWatch logs
 - [ ] Add API request logging
 - [ ] Add error alerts
@@ -186,6 +213,7 @@ Use this checklist to track progress across all parts of the system (frontend, b
 ---
 
 ## 🚀 Deployment
+
 - [ ] Deploy frontend (S3 + CloudFront)
 - [ ] Deploy backend (EC2 / ECS)
 - [ ] Connect backend to RDS
@@ -196,6 +224,7 @@ Use this checklist to track progress across all parts of the system (frontend, b
 ---
 
 ## 📚 Documentation
+
 - [ ] Full architecture documentation
 - [ ] API reference docs
 - [ ] ERD diagram
@@ -205,6 +234,7 @@ Use this checklist to track progress across all parts of the system (frontend, b
 ---
 
 ### 🎉 Final Goal
+
 - [ ] MVP live with user accounts
 - [ ] Users can submit problems
 - [ ] AI detects mistakes & explains them
