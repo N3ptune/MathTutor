@@ -51,7 +51,7 @@ A checklist to track progress across all parts of the system (frontend, backend,
 
 - [X] Home / Landing Page
 - [X] Login / Signup UI
-- [ ] Dashboard (progress overview)
+- [X] Dashboard (progress overview)
 - [ ] Problem Input Flow (multi-step wizard)
 - [ ] AI Feedback / Results Page
 - [ ] Study Guide / Review Generator Page

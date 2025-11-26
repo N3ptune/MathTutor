@@ -1,0 +1,89 @@
+/* Top Blue Bar */
+.navbar {
+  position: fixed;       /* Fix it to the top */
+  top: 0;
+  left: 0;
+  width: 100vw;          /* Full viewport width */
+  height: 60px;
+  background-color: #2563eb; /* Blue */
+  display: flex;
+  align-items: center;
+  z-index: 1001;         /* Above content */
+  padding: 0 20px;       /* Horizontal padding */
+  box-sizing: border-box; /* Include padding in width */
+}
+
+.hamburger {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: white;
+  margin-left: 20px;
+  cursor: pointer;
+}
+
+.navbar-title {
+  flex: 1;
+  text-align: center;
+  font-size: 22px;
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  top: 60px; /* same height as navbar */
+  left: -250px; /* hidden initially */
+  width: 250px;
+  height: calc(100vh - 60px); /* full height minus navbar */
+  background: white;
+  box-shadow: 3px 0 10px rgba(0,0,0,0.2);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: left 0.3s ease;
+  z-index: 1000; /* below navbar */
+  display: none;
+}
+
+.sidebar.open {
+  display: flex;
+  left: 0;
+}
+
+.sidebar a {
+  font-size: 18px;
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.sidebar a:hover {
+  text-decoration: underline;
+}
+
+/* Logout button */
+.logout-btn {
+  margin-top: auto;
+  background: #ef4444;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: #dc2626;
+}
+
+/* Overlay to close sidebar */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 500;
+}

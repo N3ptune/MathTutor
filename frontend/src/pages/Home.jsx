@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { AuthState } from "../authState.js";
+import { useNavigate } from "react-router-dom";
 import "./Home.css";
 
 export default function Home({ setLoggedIn }) {
+  const navigate = useNavigate();
   const [authState, setAuthState] = useState(AuthState.Unknown);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -20,12 +22,13 @@ export default function Home({ setLoggedIn }) {
 
   // Handle login
   const handleLogin = () => {
-    // TODO: Add real authentication later
-    console.log("Logging in:", loginUsername, loginPassword);
-    setAuthState(AuthState.Authenticated);
-    setLoggedIn(true);
-    setShowLogin(false);
+  console.log("Logging in:", loginUsername, loginPassword);
+  setAuthState(AuthState.Authenticated);
+  setLoggedIn(true);
+  setShowLogin(false);
+  navigate("/dashboard");   // NEW LINE
   };
+
 
   // Handle register
   const handleRegister = () => {
@@ -37,6 +40,7 @@ export default function Home({ setLoggedIn }) {
     setAuthState(AuthState.Authenticated);
     setLoggedIn(true);
     setShowRegister(false);
+    navigate("/dashboard");
   };
 
   return (

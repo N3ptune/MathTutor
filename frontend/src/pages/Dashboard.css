@@ -1,0 +1,84 @@
+.dashboard-container {
+  width: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+}
+
+/* Header */
+.dashboard-header {
+  text-align: center;
+}
+
+.dashboard-welcome {
+  color: #2563eb;        /* bright blue */
+  font-size: 2.5rem;
+  font-weight: bold;
+}
+
+/* Section Titles */
+.section-title {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* Progress Section */
+.progress-section {
+  width: 100%;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.stat-card {
+  width: 250px;
+  height: 180px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Classes Section */
+.classes-section {
+  width: 100%;
+  padding-top: 20px;
+  border-top: 2px solid #e5e7eb; /* divider between sections */
+}
+
+.classes-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.class-card {
+  width: 250px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.class-btn {
+  margin-top: 15px;
+  background: #2563eb;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.class-btn:hover {
+  background: #1d4ed8;
+}

@@ -11,7 +11,7 @@
   - [] Problem input page
   - [] Results page
   - [] History page
-  - [] Dashboard page
+  - [X] Dashboard page
 - [ ] Initialize FastAPI backend
 - [ ] Create `/evaluate` endpoint (stub response)
 - [ ] Set up Firebase Auth (email/password only)
