@@ -12,7 +12,7 @@ export default function Navbar({ setLoggedIn }) {
         <button className="hamburger" onClick={() => setOpen(!open)}>
           ☰
         </button>
-        <h1 className="navbar-title">Welcome, Student</h1>
+        <h1 className="navbar-title">Math Tutor</h1>
       </div>
 
       {/* Sidebar */}

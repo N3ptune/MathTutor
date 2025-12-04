@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AuthState } from "../authState.js";
 import { useNavigate } from "react-router-dom";
@@ -20,15 +20,20 @@ export default function Home({ setLoggedIn }) {
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
 
+  // Navigate to dashboard when authenticated
+  useEffect(() => {
+    if (authState === AuthState.Authenticated) {
+      navigate("/dashboard");
+    }
+  }, [authState, navigate]);
+
   // Handle login
   const handleLogin = () => {
-  console.log("Logging in:", loginUsername, loginPassword);
-  setAuthState(AuthState.Authenticated);
-  setLoggedIn(true);
-  setShowLogin(false);
-  navigate("/dashboard");   // NEW LINE
+    console.log("Logging in:", loginUsername, loginPassword);
+    setAuthState(AuthState.Authenticated);
+    setLoggedIn(true);
+    setShowLogin(false);
   };
-
 
   // Handle register
   const handleRegister = () => {
@@ -40,7 +45,6 @@ export default function Home({ setLoggedIn }) {
     setAuthState(AuthState.Authenticated);
     setLoggedIn(true);
     setShowRegister(false);
-    navigate("/dashboard");
   };
 
   return (

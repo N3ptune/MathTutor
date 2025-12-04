@@ -1,33 +1,34 @@
 /* Top Blue Bar */
 .navbar {
-  position: fixed;       /* Fix it to the top */
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;          /* Full viewport width */
+  width: 100%;
   height: 60px;
-  background-color: #2563eb; /* Blue */
+  background-color: #2563eb;
   display: flex;
   align-items: center;
-  z-index: 1001;         /* Above content */
-  padding: 0 20px;       /* Horizontal padding */
-  box-sizing: border-box; /* Include padding in width */
+  justify-content: center; /* centers the title */
+  z-index: 1001;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .hamburger {
+  position: absolute; /* take it out of the flex flow */
+  left: 20px;         /* distance from left edge */
   background: none;
   border: none;
   font-size: 28px;
   color: white;
-  margin-left: 20px;
   cursor: pointer;
 }
 
 .navbar-title {
-  flex: 1;
-  text-align: center;
   font-size: 22px;
-  color: rgb(255, 255, 255);
+  color: white;
   font-weight: bold;
+  text-align: center;
 }
 
 /* Sidebar */

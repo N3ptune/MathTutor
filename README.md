@@ -19,7 +19,7 @@ An app that takes in user input in clear steps for a higher level math problem, 
 |  |  |  |
 |  |  |  |
 
-**Total: 16.5**
+### **Total: 16.5**
 
 ## ✅ Project Development Checklist
 

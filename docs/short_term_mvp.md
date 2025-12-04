@@ -8,9 +8,7 @@
 - [X] Initialize React project (`create-react-app` or Vite)
 - [X] Create basic React page structure:
   - [X] Home page
-  - [] Problem input page
-  - [] Results page
-  - [] History page
+  - [X] Problem input page
   - [X] Dashboard page
 - [ ] Initialize FastAPI backend
 - [ ] Create `/evaluate` endpoint (stub response)
