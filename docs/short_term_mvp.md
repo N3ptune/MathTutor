@@ -12,12 +12,12 @@
   - [X] Dashboard page
 - [X] Initialize FastAPI backend
 - [X] Create `/evaluate` endpoint (stub response)
-- [ ] Set up Firebase Auth (email/password only)
+- [X] Set up Firebase Auth (email/password only)
 - [X] Set up PostgreSQL locally or on RDS
 - [X] Create minimal DB schema:
   - [X] `users` table
   - [X] `attempts` table
-- [ ] Connect backend to PostgreSQL
+- [] Connect backend to PostgreSQL
 - [ ] Implement basic full-stack flow with mock evaluation:
   - [ ] User submits steps → backend returns fake output
   - [ ] Store mock results in DB

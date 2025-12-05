@@ -12,14 +12,14 @@ An app that takes in user input in clear steps for a higher level math problem, 
 | 11/25/2025  | Home page and login UI mock | 8 |
 | 12/3/2025| More frontend | 4 |
 | 12/4/2025 | Backend database, evaluate endpoint, firebase | 9 |
-|  |  |  |
+| 12/5/2025 | Frontend connect to supabase and firebase | 4 |
 |  |  |  |
 |  |  |  |
 |  |  |  |
 |  |  |  |
 |  |  |  |
 
-### **Total: 29.5**
+### **Total: 33.5**
 
 ## ✅ Project Development Checklist
 

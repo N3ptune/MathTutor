@@ -1,9 +1,16 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import "./Navbar.css";
+import { auth } from "../firebase";
+import { signOut } from "firebase/auth";
 
-export default function Navbar({ setLoggedIn }) {
+export default function Navbar() {
   const [open, setOpen] = useState(false);
+
+  function handleLogout() {
+    signOut(auth).catch((err) => console.error("Logout failed:", err));
+    setOpen(false);
+  }
 
   return (
     <>
@@ -17,18 +24,14 @@ export default function Navbar({ setLoggedIn }) {
 
       {/* Sidebar */}
       <div className={`sidebar ${open ? "open" : ""}`}>
-        <Link to="/dashboard" onClick={() => setOpen(false)}>Dashboard</Link>
-        <Link to="/input" onClick={() => setOpen(false)}>Problem Input</Link>
-        <Link to="/results" onClick={() => setOpen(false)}>Results</Link>
-        <Link to="/history" onClick={() => setOpen(false)}>History</Link>
+        <div className="sidebar-links">
+          <Link to="/dashboard" onClick={() => setOpen(false)}>Dashboard</Link>
+          <Link to="/input" onClick={() => setOpen(false)}>Problem Input</Link>
+          <Link to="/results" onClick={() => setOpen(false)}>Results</Link>
+          <Link to="/history" onClick={() => setOpen(false)}>History</Link>
+        </div>
 
-        <button
-          className="logout-btn"
-          onClick={() => {
-            setLoggedIn(false);
-            setOpen(false);
-          }}
-        >
+        <button className="logout-btn" onClick={handleLogout}>
           Logout
         </button>
       </div>
