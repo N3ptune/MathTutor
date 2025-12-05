@@ -1,1 +1,18 @@
+# Firebase Admin Private Key
+**/serviceAccountKey.json
+
+# Environment variables
 .env
+**/.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Node modules
+frontend/node_modules/
+backend/node_modules/
+
+# Build outputs
+dist/
+build/
