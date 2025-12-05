@@ -10,8 +10,8 @@ An app that takes in user input in clear steps for a higher level math problem, 
 | 11/17/2025 | Worked on cost plans  | 2 |
 | 11/24/2025 | System Architecture design | 4 |
 | 11/25/2025  | Home page and login UI mock | 8 |
-|  |  |  |
-|  |  |  |
+| 12/3/2025| More frontend | 4 |
+| 12/4/2025 | Backend database, evaluate endpoint, firebase | 9 |
 |  |  |  |
 |  |  |  |
 |  |  |  |
@@ -19,7 +19,7 @@ An app that takes in user input in clear steps for a higher level math problem, 
 |  |  |  |
 |  |  |  |
 
-### **Total: 16.5**
+### **Total: 29.5**
 
 ## ✅ Project Development Checklist
 
