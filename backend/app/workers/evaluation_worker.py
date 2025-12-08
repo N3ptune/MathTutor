@@ -10,7 +10,7 @@ async def evaluate_steps(problemId: int, steps: list[str]):
     problem_text = await get_problem_text(problemId)
 
     messages = [
-        {"role": "system", "content": "You are a helpful math tutor. Evaluate each step of the student's solution. Do not add any headers like evaluation or labelling the step. Simply respond with feedback on each step, separated by newline characters"},
+        {"role": "system", "content": "You are a helpful math tutor. Evaluate each step of the student's solution. Do not add any headers like evaluation or labelling the step. Simply respond with feedback on each step, separated by newline characters. Do not give away any answers, your feedback is supposed to only encourage them in the right direction."},
         {"role": "user", "content": f"Problem: {problem_text}"}
     ]
 
