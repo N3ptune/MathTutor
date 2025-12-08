@@ -17,10 +17,9 @@
 - [X] Create minimal DB schema:
   - [X] `users` table
   - [X] `attempts` table
-- [] Connect backend to PostgreSQL
-- [ ] Implement basic full-stack flow with mock evaluation:
-  - [ ] User submits steps → backend returns fake output
-  - [ ] Store mock results in DB
+- [X] Connect backend to PostgreSQL
+- [X] Implement basic full-stack flow with mock evaluation:
+  - [X] User submits steps → backend returns fake output
 
 ---
 
@@ -28,21 +27,17 @@
 
 ### 🤖 Build Real Evaluation Pipeline
 
-- [ ] Integrate OpenAI API into backend
-- [ ] Create first prompt template for math-step evaluation
-- [ ] Parse user steps into prompt format
-- [ ] Create standardized AI response format (JSON)
-- [ ] Validate and sanitize AI output
-- [ ] Save real evaluations to PostgreSQL
-- [ ] Implement frontend logic to:
-  - [ ] Submit problem steps
-  - [ ] Display AI evaluation (where/why mistake)
-- [ ] Build history page UI to show past attempts
-- [ ] Test with:
-  - [ ] Algebra problems
-  - [ ] Calculus problems
-  - [ ] Common student mistakes
-- [ ] Add minimal error handling and retry logic
+- [X] Integrate OpenAI API into backend
+- [X] Create first prompt template for math-step evaluation
+- [X] Parse user steps into prompt format
+- [X] Create standardized AI response format (JSON)
+- [X] Validate and sanitize AI output
+- [X] Implement frontend logic to:
+  - [X] Submit problem steps
+  - [X] Display AI evaluation (where/why mistake)
+- [X] Test with:
+  - [X] Algebra problems
+- [X] Add minimal error handling and retry logic
 
 ---
 
@@ -59,7 +54,7 @@
   - [ ] Add custom domain and HTTPS
 - [ ] Deploy backend:
   - [ ] Launch EC2 instance (t3.small)
-  - [ ] Install Python, FastAPI, Uvicorn
+  - [ ] Install Python, FastAPI
   - [ ] Configure reverse proxy (NGINX)
   - [ ] Add environment variables (OpenAI key, Firebase keys, DB credentials)
 - [ ] Set up PostgreSQL RDS instance (if not local)

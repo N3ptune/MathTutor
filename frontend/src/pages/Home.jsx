@@ -29,15 +29,15 @@ export default function Home() {
     if (user) navigate("/dashboard");
   }, [user, navigate]);
 
-  // ---------------- LOGIN ----------------
+  // Login using email, first trying firebase, and then making sure that the user also exists in supabase
   async function handleLoginEmail() {
     try {
-      // 1️⃣ Login with Firebase
+
       const userCred = await loginEmailPassword(loginEmail, loginPassword);
 
-      // 2️⃣ Fetch Supabase user row
+
       const { data, error } = await supabase
-        .from("users") // make sure table name is plural
+        .from("users")
         .select("*")
         .eq("firebase_uid", userCred.user.uid)
         .single();
@@ -53,7 +53,8 @@ export default function Home() {
     }
   }
 
-  // ---------------- REGISTER ----------------
+  // Register using Firebase, then push the email and firebase_uid to supabase for imformation parsing
+  // Ensures that the passwords match.
   async function handleRegisterEmail() {
     if (regPassword !== regConfirm) {
       alert("Passwords do not match!");
@@ -61,17 +62,15 @@ export default function Home() {
     }
 
     try {
-      // 1️⃣ Register in Firebase
+
       const userCred = await registerEmailPassword(regEmail, regPassword);
 
-      // 2️⃣ Insert new Supabase row
       const { data, error } = await supabase
         .from("users")
         .insert([
           {
             email: regEmail,
             firebase_uid: userCred.user.uid,
-            // You can add default fields for courses, sections, etc.
           }
         ])
         .select()
@@ -88,12 +87,11 @@ export default function Home() {
     }
   }
 
-  // ---------------- GOOGLE LOGIN ----------------
+  // Logs in with google, functions as both login and register, which is pretty cool.
   async function handleGoogleLogin() {
     try {
       const userCred = await loginWithGoogle();
 
-      // Check if user already exists in Supabase
       const { data, error } = await supabase
         .from("users")
         .select("*")
@@ -103,7 +101,6 @@ export default function Home() {
       let supabaseData = data;
 
       if (!supabaseData) {
-        // Insert new user if not exist
         const { data: newUser, error: insertError } = await supabase
           .from("users")
           .insert([
@@ -126,7 +123,6 @@ export default function Home() {
     }
   }
 
-  // ---------------- RENDER ----------------
   return (
     <div className="home-container">
       <motion.h1

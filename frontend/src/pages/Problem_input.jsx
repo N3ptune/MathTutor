@@ -67,29 +67,47 @@ export default function ProblemInput() {
   // Takes the steps, and will pass them to a processor that will format them to be submitted to backend
   // Will then set the feedback to be shown, which will also be processed in the backend
   const handleSubmit = async () => {
-    setIsEvaluating(true);
-    setTimeout(() => {
-      const fakeFeedback = steps.map((s, i) =>
-        s.trim()
-          ? `Step ${i + 1} looks good, but consider simplifying.`
-          : `Step ${i + 1} is empty.`
-      );
+  setIsEvaluating(true);
 
-      setFeedback(fakeFeedback);
-      setIsEvaluating(false);
-    }, 2000);
+  try {
+    //Log what you're sending
+    console.log("Submitting steps:", steps);
+    console.log("Submitting problemId:", problemId);
 
-    // Later I'll replace this with a real call:
-    /*
-    const response = await fetch("/evaluate", {
+    // Make sure problemId is a number
+    const bodyData = { problemId: Number(problemId), steps };
+    console.log("POST body:", bodyData);
+
+    // Send request
+    const response = await fetch("http://localhost:8000/api/evaluate/", {
       method: "POST",
-      body: JSON.stringify({ steps }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bodyData),
     });
-    const data = await response.json();
-    setFeedback(data.feedback);
-    setIsEvaluating(false);
-    */
-  };
+
+    // Log response status
+    console.log("Response status:", response.status);
+
+    // Parse JSON safely
+    let data;
+    try {
+      data = await response.json();
+      console.log("Response JSON:", data);
+    } catch (jsonErr) {
+      console.error("Failed to parse JSON:", jsonErr);
+      data = {};
+    }
+
+    // Update feedback
+    setFeedback(data.feedback || steps.map(() => "No feedback received"));
+
+  } catch (err) {
+    console.error("Evaluation error:", err);
+  }
+
+  setIsEvaluating(false);
+};
+
 
   return (
     <div className="problem-input-container">

@@ -1,37 +1,24 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from app.workers.evaluation_worker import evaluate_steps
 import sympy as sp
 
-router = APIRouter(tags=["Evaluation"])
+router = APIRouter(prefix="/evaluate", tags=["Evaluation"])
 
 class EvaluateRequest(BaseModel):
-    problem: str
-
-class EvaluateResponse(BaseModel):
-    problem: str
-    result: str
+    problemId: int
     steps: list[str]
 
-@router.post("/evaluate", response_model=EvaluateResponse)
-def evaluate_math(req: EvaluateRequest):
+class EvaluateResponse(BaseModel):
+    feedback: list[str]
+
+# Takes in the evaluation request
+# Throws back the parsed and complete feedback
+@router.post("/", response_model=EvaluateResponse)
+async def evaluate(request: EvaluateRequest):
     try:
-        # Parse the expression safely
-        expr = sp.sympify(req.problem)
-
-        # Solve/simplify the expression
-        simplified = sp.simplify(expr)
-
-        # Dummy "steps" (you can expand later)
-        steps = [
-            f"Original: {req.problem}",
-            f"Simplified: {simplified}"
-        ]
-
-        return EvaluateResponse(
-            problem=req.problem,
-            result=str(simplified),
-            steps=steps
-        )
-
+        feedback = await evaluate_steps(request.problemId, request.steps)
+        return {"feedback": feedback}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+    
