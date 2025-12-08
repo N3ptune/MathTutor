@@ -13,13 +13,13 @@ An app that takes in user input in clear steps for a higher level math problem, 
 | 12/3/2025| More frontend | 4 |
 | 12/4/2025 | Backend database, evaluate endpoint, firebase | 9 |
 | 12/5/2025 | Frontend connect to supabase and firebase | 4 |
-|  |  |  |
+| 12/7/2025 | Trying to desperately get supabase to work | 6 |
 |  |  |  |
 |  |  |  |
 |  |  |  |
 |  |  |  |
 
-### **Total: 33.5**
+### **Total: 39.5**
 
 ## ✅ Project Development Checklist
 
