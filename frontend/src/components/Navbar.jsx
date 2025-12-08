@@ -7,6 +7,7 @@ import { signOut } from "firebase/auth";
 export default function Navbar() {
   const [open, setOpen] = useState(false);
 
+  // Signs the user out
   function handleLogout() {
     signOut(auth).catch((err) => console.error("Logout failed:", err));
     setOpen(false);
@@ -26,9 +27,6 @@ export default function Navbar() {
       <div className={`sidebar ${open ? "open" : ""}`}>
         <div className="sidebar-links">
           <Link to="/dashboard" onClick={() => setOpen(false)}>Dashboard</Link>
-          <Link to="/input" onClick={() => setOpen(false)}>Problem Input</Link>
-          <Link to="/results" onClick={() => setOpen(false)}>Results</Link>
-          <Link to="/history" onClick={() => setOpen(false)}>History</Link>
         </div>
 
         <button className="logout-btn" onClick={handleLogout}>

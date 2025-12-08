@@ -11,30 +11,32 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!supabaseUser) return; // Wait until user info is loaded
+    if (!supabaseUser) return;
 
+    // Function fetchCourses takes in no arguments
+    // From table user_course it selects the courseId where userId is equal to the fetched userId
+    // Then, if no classes exist for this user, it displays no classes enrolled yet. Otherwise, it generates containers for each class that
+    // has a button to navigate to a dynamically populated page with the chosen class information.
     async function fetchCourses() {
       try {
-        // Assuming you have a join table 'user_courses' linking user_id -> course_id
         const { data: enrollmentData, error: enrollError } = await supabase
-          .from("user_course")          // your join table
-          .select("course_id")           // select the course IDs
-          .eq("user_id", supabaseUser.id);
+          .from("user_course")
+          .select("courseId")
+          .eq("userId", supabaseUser.userId);
 
         if (enrollError) throw enrollError;
 
         if (enrollmentData.length === 0) {
-          setCourses([]); // No courses enrolled
+          setCourses([]);
           return;
         }
 
-        // Fetch course info based on IDs
-        const courseIds = enrollmentData.map((e) => e.course_id);
+        const courseIds = enrollmentData.map((e) => e.courseId);
 
         const { data: courseData, error: courseError } = await supabase
-          .from("course")              // your courses table
+          .from("course")
           .select("*")
-          .in("id", courseIds);
+          .in("courseId", courseIds);
 
         if (courseError) throw courseError;
 
@@ -47,6 +49,10 @@ export default function Dashboard() {
     fetchCourses();
   }, [supabaseUser]);
 
+  // Returns three different sections:
+  // A header section that welcomes the user email from supabase
+  // A progress section that takes in information from supabase to generate statistics
+  // A class section that has containers for each class enrolled.
   return (
     <div className="dashboard-container">
 
@@ -74,11 +80,11 @@ export default function Dashboard() {
         <div className="classes-row">
           {courses.length > 0 ? (
             courses.map((course) => (
-              <div key={course.id} className="class-card">
+              <div key={course.courseId} className="class-card">
                 <h3>{course.name}</h3>
                 <button
                   className="class-btn"
-                  onClick={() => navigate(`/course/${course.id}`)}
+                  onClick={() => navigate(`/course/${course.courseId}`)}
                 >
                   Go to Class
                 </button>

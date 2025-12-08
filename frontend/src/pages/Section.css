@@ -1,0 +1,37 @@
+.section-container {
+  padding: 2rem;
+}
+
+.section-title {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.sections-row {
+  display: flex;
+  flex-wrap: wrap; /* row first, then column */
+  gap: 1rem;
+}
+
+.section-card {
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 1rem;
+  width: 200px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.section-btn {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.section-btn:hover {
+  background-color: #45a049;
+}

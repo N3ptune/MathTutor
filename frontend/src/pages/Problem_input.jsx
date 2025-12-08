@@ -1,24 +1,61 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import { useParams } from "react-router-dom";
+import { supabase } from "../supabase";
+import { AuthState } from "../authState.jsx";
 import "./ProblemInput.css";
 
 export default function ProblemInput() {
+  const { problemId } = useParams();
+  const { supabaseUser } = useContext(AuthState);
+
+  const [problemText, setProblemText] = useState("");
   const [steps, setSteps] = useState([""]);
-  const [feedback, setFeedback] = useState([]); // stores AI feedback per step
+  const [feedback, setFeedback] = useState([]);
   const [isEvaluating, setIsEvaluating] = useState(false);
 
-  // Convert input shortcuts to symbols
+  // Takes no arguments
+  // Fetches the arguments from supabase, and then stores the problem text
+  useEffect(() => {
+    if (!supabaseUser) return;
+
+    async function fetchProblem() {
+      try {
+        const { data, error } = await supabase
+          .from("problem")
+          .select("*")
+          .eq("problemId", problemId)
+          .single();
+
+        if (error) throw error;
+
+        setProblemText(data.problem);
+      } catch (err) {
+        console.error("Failed to fetch problem:", err);
+      }
+    }
+
+    fetchProblem();
+  }, [problemId, supabaseUser]);
+
+  // Takes in the text that should be replaced
+  // Will convert text to the proper symbols, so that the problem does not look messy.
+  // Implementation of limits and integral will be very interesting
   const convertInput = (text) => {
     return text.replace(/sqrt\(/gi, "√(");
   };
 
+  // Takes in the index, which is the number step it is, and value, which is whatever is being typed into the box
   const updateStep = (index, value) => {
     const newSteps = [...steps];
     newSteps[index] = convertInput(value);
     setSteps(newSteps);
   };
 
+  // Adds a step below existing steps
   const addStep = () => setSteps([...steps, ""]);
 
+  // Takes in the index of the step that is being deleted
+  // Deletes a step, changes indexes and relevant correlatedinformation if necessary
   const deleteStep = (index) => {
     const updatedSteps = steps.filter((_, i) => i !== index);
     const updatedFeedback = feedback.filter((_, i) => i !== index);
@@ -26,10 +63,11 @@ export default function ProblemInput() {
     setFeedback(updatedFeedback);
   };
 
+  // Takes no argumnets
+  // Takes the steps, and will pass them to a processor that will format them to be submitted to backend
+  // Will then set the feedback to be shown, which will also be processed in the backend
   const handleSubmit = async () => {
     setIsEvaluating(true);
-
-    // ⏳ Simulate backend evaluation delay
     setTimeout(() => {
       const fakeFeedback = steps.map((s, i) =>
         s.trim()
@@ -41,7 +79,7 @@ export default function ProblemInput() {
       setIsEvaluating(false);
     }, 2000);
 
-    // Later you'll replace this with a real call:
+    // Later I'll replace this with a real call:
     /*
     const response = await fetch("/evaluate", {
       method: "POST",
@@ -59,11 +97,7 @@ export default function ProblemInput() {
 
       {/* Problem Display */}
       <div className="problem-display">
-        <img
-          src="/example-problem.png"
-          alt="Math Problem"
-          className="problem-img"
-        />
+        <p className="problem-text">{problemText || "Loading problem..."}</p>
       </div>
 
       <div className="content-row">
