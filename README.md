@@ -24,3 +24,11 @@ An app that takes in user input in clear steps for a higher level math problem, 
 ## Current
 
 A locally hosted and run app that implements typing for solving text based equations and queries OpenAI to get feedback on the steps submitted.
+
+My main three takeaways from this were:
+
+1. Storing and keeping secret keys and hidden information
+2. Coordinating between a frontend and a backend
+3. All of the different tools and even just languages that a project uses and needs
+
+This project is interesting to me because of the relevance I feel it has to my time in higher level math courses, and how much I would've used this.
