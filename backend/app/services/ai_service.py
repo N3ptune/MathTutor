@@ -16,7 +16,7 @@ def _get_client() -> openai.OpenAI:
 # returns first choice in case of split choices to ensure an option is always picked and nothing hangs
 async def send_ai_request(messages: list[dict], use_vision: bool = False) -> str:
     def call_openai():
-        response = client.responses.create(
+        response = _get_client.responses.create(
             model = "gpt-5" if use_vision else "gpt-5-mini",
             input = messages
         )

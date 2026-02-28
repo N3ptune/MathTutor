@@ -7,7 +7,7 @@ export default function RequireAuth({ children }) {
   const { user } = useContext(AuthState);
 
   if (user === undefined) {
-    return <p>Loading...</p>;
+    return <p className="flex items-center justify-center min-h-screen text-muted-foreground">Loading...</p>;
   }
 
   if (!user) {
