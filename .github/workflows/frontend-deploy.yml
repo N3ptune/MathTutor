@@ -52,7 +52,14 @@ jobs:
           VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
-        run: npm run build
+        run: |
+          #region agent log
+          echo "DEBUG H1/H3: env var presence check (values redacted)"
+          echo "VITE_SUPABASE_URL set: $([[ -n \"$VITE_SUPABASE_URL\" ]] && echo YES || echo NO)"
+          echo "VITE_SUPABASE_ANON_KEY set: $([[ -n \"$VITE_SUPABASE_ANON_KEY\" ]] && echo YES || echo NO)"
+          echo "VITE_FIREBASE_API_KEY set: $([[ -n \"$VITE_FIREBASE_API_KEY\" ]] && echo YES || echo NO)"
+          #endregion
+          npm run build
 
       - name: Sync to S3
         run: aws s3 sync dist/ s3://${{ vars.S3_BUCKET_NAME }} --delete
