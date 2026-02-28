@@ -69,8 +69,8 @@ jobs:
 
           #region agent log
           CALLER_ARN="$(aws sts get-caller-identity --query Arn --output text 2>&1 || true)"
-          ROLE_POLICY_RAW="$(aws iam get-role-policy --role-name mathtutor-prod-github-actions --policy-name mathtutor-prod-backend-deploy --output json 2>&1 || true)"
-          export CALLER_ARN ROLE_POLICY_RAW
+          DESCRIBE_RESULT="$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.Status' --output text 2>&1 || true)"
+          export CALLER_ARN DESCRIBE_RESULT
           python3 - <<'PY'
           import json
           import os
@@ -79,77 +79,31 @@ jobs:
 
           log_path = "/Users/lmcnatt/Projects/MathTutor/.cursor/debug-511fd2.log"
           caller_arn = os.environ.get("CALLER_ARN", "")
-          role_policy_raw = os.environ.get("ROLE_POLICY_RAW", "")
           service_arn = os.environ.get("SERVICE_ARN", "")
-
-          resource_candidates = []
-          has_update_service = False
-          policy_fetch_ok = role_policy_raw.strip().startswith("{")
-
-          if policy_fetch_ok:
-              try:
-                  policy_doc = json.loads(role_policy_raw).get("PolicyDocument", {})
-                  statements = policy_doc.get("Statement", [])
-                  if isinstance(statements, dict):
-                      statements = [statements]
-                  for stmt in statements:
-                      actions = stmt.get("Action", [])
-                      if isinstance(actions, str):
-                          actions = [actions]
-                      if "apprunner:UpdateService" in actions:
-                          has_update_service = True
-                          resource_candidates.append(stmt.get("Resource"))
-              except Exception:
-                  policy_fetch_ok = False
+          describe_result = os.environ.get("DESCRIBE_RESULT", "")
+          source_config = os.environ.get("SOURCE_CONFIGURATION", "")
+          ecr_role_arn = ""
+          try:
+              ecr_role_arn = json.loads(source_config).get("AuthenticationConfiguration", {}).get("AccessRoleArn", "")
+          except Exception:
+              pass
 
           payloads = [
               {
                   "sessionId": "511fd2",
-                  "runId": "pre-fix",
-                  "hypothesisId": "H6",
+                  "runId": "post-condition-removal",
+                  "hypothesisId": "H10",
                   "location": ".github/workflows/backend-deploy.yml",
-                  "message": "Captured caller ARN for deploy role",
+                  "message": "Pre-update diagnostics after Condition removal",
                   "data": {
                       "callerArn": caller_arn,
-                  },
-                  "timestamp": int(time.time() * 1000),
-              },
-              {
-                  "sessionId": "511fd2",
-                  "runId": "pre-fix",
-                  "hypothesisId": "H7",
-                  "location": ".github/workflows/backend-deploy.yml",
-                  "message": "Captured backend deploy inline role policy summary",
-                  "data": {
-                      "policyFetchOk": policy_fetch_ok,
-                      "hasUpdateServiceAction": has_update_service,
-                      "updateServiceResources": resource_candidates,
-                      "policyFetchErrorSnippet": role_policy_raw[:300] if not policy_fetch_ok else "",
-                  },
-                  "timestamp": int(time.time() * 1000),
-              },
-              {
-                  "sessionId": "511fd2",
-                  "runId": "pre-fix",
-                  "hypothesisId": "H9",
-                  "location": ".github/workflows/backend-deploy.yml",
-                  "message": "Validated service ARN shape from repository variable",
-                  "data": {
                       "serviceArn": service_arn,
-                      "serviceArnHasWhitespace": bool(re.search(r"\s", service_arn)),
-                      "serviceArnHasSlashBackendSegment": bool(re.search(r"service/[^/]+/backend/", service_arn)),
-                  },
-                  "timestamp": int(time.time() * 1000),
-              },
-              {
-                  "sessionId": "511fd2",
-                  "runId": "pre-fix",
-                  "hypothesisId": "H8",
-                  "location": ".github/workflows/backend-deploy.yml",
-                  "message": "Compared deploy SERVICE_ARN with policy resource candidates",
-                  "data": {
-                      "serviceArn": service_arn,
-                      "serviceArnMatchesAnyPolicyResource": service_arn in [str(r) for r in resource_candidates],
+                      "serviceArnValid": not bool(re.search(r"\s", service_arn)),
+                      "describeServiceResult": describe_result,
+                      "describeServiceOk": "AccessDenied" not in describe_result and "error" not in describe_result.lower(),
+                      "ecrAccessRoleArnFromConfig": ecr_role_arn,
+                      "ecrAccessRoleArnExpected": "arn:aws:iam::480009779030:role/mathtutor-prod-apprunner-ecr-access",
+                      "ecrAccessRoleArnMatch": ecr_role_arn == "arn:aws:iam::480009779030:role/mathtutor-prod-apprunner-ecr-access",
                   },
                   "timestamp": int(time.time() * 1000),
               },
