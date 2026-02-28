@@ -1,10 +1,12 @@
 name: Backend Deploy
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - "backend/**"
+      - ".github/workflows/backend-deploy.yml"
 
 permissions:
   id-token: write
@@ -21,6 +23,54 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Debug trigger context
+        run: |
+          #region agent log
+          python3 - <<'PY'
+          import json
+          import time
+          import os
+
+          log_path = "/Users/lmcnatt/Projects/MathTutor/.cursor/debug-511fd2.log"
+          payloads = [
+              {
+                  "sessionId": "511fd2",
+                  "runId": "pre-fix",
+                  "hypothesisId": "H4",
+                  "location": ".github/workflows/backend-deploy.yml",
+                  "message": "Captured workflow trigger event context",
+                  "data": {
+                      "eventName": os.environ.get("GITHUB_EVENT_NAME", ""),
+                      "ref": os.environ.get("GITHUB_REF", ""),
+                      "sha": os.environ.get("GITHUB_SHA", ""),
+                  },
+                  "timestamp": int(time.time() * 1000),
+              },
+              {
+                  "sessionId": "511fd2",
+                  "runId": "pre-fix",
+                  "hypothesisId": "H5",
+                  "location": ".github/workflows/backend-deploy.yml",
+                  "message": "Captured repository/workflow context",
+                  "data": {
+                      "repository": os.environ.get("GITHUB_REPOSITORY", ""),
+                      "workflow": os.environ.get("GITHUB_WORKFLOW", ""),
+                      "actor": os.environ.get("GITHUB_ACTOR", ""),
+                  },
+                  "timestamp": int(time.time() * 1000),
+              },
+          ]
+
+          for payload in payloads:
+              print(json.dumps(payload, ensure_ascii=True))
+              try:
+                  with open(log_path, "a", encoding="utf-8") as f:
+                      f.write(json.dumps(payload, ensure_ascii=True) + "\n")
+              except Exception:
+                  pass
+          PY
+          #endregion
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
