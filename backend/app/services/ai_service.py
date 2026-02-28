@@ -3,9 +3,13 @@ import json
 import os
 import asyncio
 
-openai_key = os.environ.get("OPENAI_API_KEY")
+_client = None
 
-client = openai.OpenAI()
+def _get_client() -> openai.OpenAI:
+    global _client
+    if _client is None:
+        _client = openai.OpenAI()
+    return _client
 
 # Takes in the messages from the router
 # Sends a message to ai of choice and returns the response
