@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import ProblemInput from './pages/Problem_Input.jsx'
+import ProblemInput from './pages/Problem_input.jsx'
 import Home from './pages/Home.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Navbar from "./components/Navbar.jsx"
