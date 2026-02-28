@@ -4,7 +4,8 @@ import { AuthState } from "../authState.jsx";
 import { 
   loginWithGoogle, 
   registerEmailPassword, 
-  loginEmailPassword 
+  loginEmailPassword,
+  isFirebaseAuthConfigured,
 } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase.js";
@@ -31,6 +32,9 @@ export default function Home() {
 
   // Login using email, first trying firebase, and then making sure that the user also exists in supabase
   async function handleLoginEmail() {
+    if (!isFirebaseAuthConfigured) {
+      return;
+    }
     try {
 
       const userCred = await loginEmailPassword(loginEmail, loginPassword);
@@ -56,6 +60,9 @@ export default function Home() {
   // Register using Firebase, then push the email and firebase_uid to supabase for imformation parsing
   // Ensures that the passwords match.
   async function handleRegisterEmail() {
+    if (!isFirebaseAuthConfigured) {
+      return;
+    }
     if (regPassword !== regConfirm) {
       alert("Passwords do not match!");
       return;
@@ -89,6 +96,9 @@ export default function Home() {
 
   // Logs in with google, functions as both login and register, which is pretty cool.
   async function handleGoogleLogin() {
+    if (!isFirebaseAuthConfigured) {
+      return;
+    }
     try {
       const userCred = await loginWithGoogle();
 
@@ -145,13 +155,19 @@ export default function Home() {
 
       {!user && (
         <div className="home-buttons">
-          <button className="home-button" onClick={() => setShowLogin(true)}>
+          <button className="home-button" onClick={() => setShowLogin(true)} disabled={!isFirebaseAuthConfigured}>
             Sign In
           </button>
-          <button className="home-button" onClick={() => setShowRegister(true)}>
+          <button className="home-button" onClick={() => setShowRegister(true)} disabled={!isFirebaseAuthConfigured}>
             Register
           </button>
         </div>
+      )}
+
+      {!isFirebaseAuthConfigured && (
+        <p style={{ marginTop: "1rem", color: "#fca5a5" }}>
+          Firebase auth is not configured. Add VITE_FIREBASE_* values in frontend/.env to enable sign-in.
+        </p>
       )}
 
       {/* LOGIN MODAL */}
