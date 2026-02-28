@@ -113,7 +113,7 @@ resource "aws_iam_role_policy" "backend_deploy" {
           var.apprunner_service_arn,
           "arn:aws:apprunner:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:service/${var.name_prefix}/*",
         ]
-      }
+      },
       {
         Effect = "Allow"
         Action = [
