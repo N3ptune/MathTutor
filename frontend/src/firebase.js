@@ -29,18 +29,6 @@ const hasFirebaseConfig = [
   firebaseConfig.appId,
 ].every(Boolean);
 
-// #region agent log 66f9c4
-console.error('[DEBUG 66f9c4] Firebase config check:', {
-  apiKey: typeof firebaseConfig.apiKey + '/' + (firebaseConfig.apiKey?.length ?? 0),
-  authDomain: typeof firebaseConfig.authDomain + '/' + (firebaseConfig.authDomain?.length ?? 0),
-  projectId: typeof firebaseConfig.projectId + '/' + (firebaseConfig.projectId?.length ?? 0),
-  storageBucket: typeof firebaseConfig.storageBucket + '/' + (firebaseConfig.storageBucket?.length ?? 0),
-  messagingSenderId: typeof firebaseConfig.messagingSenderId + '/' + (firebaseConfig.messagingSenderId?.length ?? 0),
-  appId: typeof firebaseConfig.appId + '/' + (firebaseConfig.appId?.length ?? 0),
-  hasFirebaseConfig,
-});
-// #endregion
-
 // Initialize Firebase
 let app = null;
 let authInstance = null;
@@ -49,25 +37,15 @@ if (hasFirebaseConfig) {
   try {
     app = initializeApp(firebaseConfig);
   } catch (error) {
-    // #region agent log 66f9c4
-    console.error('[DEBUG 66f9c4] Firebase initializeApp error:', error.message);
-    // #endregion
     console.error("Failed to initialize Firebase app:", error);
   }
 
   try {
     authInstance = app ? getAuth(app) : null;
   } catch (error) {
-    // #region agent log 66f9c4
-    console.error('[DEBUG 66f9c4] Firebase getAuth error:', error.message);
-    // #endregion
     console.error("Failed to initialize Firebase auth:", error);
   }
 }
-
-// #region agent log 66f9c4
-console.error('[DEBUG 66f9c4] Firebase init result:', { appInitialized: !!app, authReady: !!authInstance });
-// #endregion
 
 export const auth = authInstance;
 export const googleProvider = new GoogleAuthProvider();
