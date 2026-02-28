@@ -109,7 +109,10 @@ resource "aws_iam_role_policy" "backend_deploy" {
           "apprunner:UpdateService",
           "apprunner:DescribeService",
         ]
-        Resource = var.apprunner_service_arn
+        Resource = [
+          var.apprunner_service_arn,
+          "arn:aws:apprunner:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:service/${var.name_prefix}/*",
+        ]
       }
     ]
   })
