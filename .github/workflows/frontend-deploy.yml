@@ -54,29 +54,15 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
         run: |
           #region agent log 66f9c4
-          echo "DEBUG 66f9c4 H1/H3: env var presence + value check"
-          echo "VITE_SUPABASE_URL set: $([[ -n \"$VITE_SUPABASE_URL\" ]] && echo YES || echo NO)"
-          echo "VITE_SUPABASE_URL first 20 chars: ${VITE_SUPABASE_URL:0:20}"
-          echo "VITE_SUPABASE_ANON_KEY set: $([[ -n \"$VITE_SUPABASE_ANON_KEY\" ]] && echo YES || echo NO)"
-          echo "VITE_SUPABASE_ANON_KEY length: ${#VITE_SUPABASE_ANON_KEY}"
-          echo "VITE_FIREBASE_API_KEY set: $([[ -n \"$VITE_FIREBASE_API_KEY\" ]] && echo YES || echo NO)"
+          echo "DEBUG 66f9c4 H5: all Firebase env vars check"
+          echo "VITE_FIREBASE_API_KEY set: $([[ -n "$VITE_FIREBASE_API_KEY" ]] && echo "YES (${#VITE_FIREBASE_API_KEY} chars)" || echo NO)"
+          echo "VITE_FIREBASE_AUTH_DOMAIN set: $([[ -n "$VITE_FIREBASE_AUTH_DOMAIN" ]] && echo "YES (${#VITE_FIREBASE_AUTH_DOMAIN} chars)" || echo NO)"
+          echo "VITE_FIREBASE_PROJECT_ID set: $([[ -n "$VITE_FIREBASE_PROJECT_ID" ]] && echo "YES (${#VITE_FIREBASE_PROJECT_ID} chars)" || echo NO)"
+          echo "VITE_FIREBASE_STORAGE_BUCKET set: $([[ -n "$VITE_FIREBASE_STORAGE_BUCKET" ]] && echo "YES (${#VITE_FIREBASE_STORAGE_BUCKET} chars)" || echo NO)"
+          echo "VITE_FIREBASE_MESSAGING_SENDER_ID set: $([[ -n "$VITE_FIREBASE_MESSAGING_SENDER_ID" ]] && echo "YES (${#VITE_FIREBASE_MESSAGING_SENDER_ID} chars)" || echo NO)"
+          echo "VITE_FIREBASE_APP_ID set: $([[ -n "$VITE_FIREBASE_APP_ID" ]] && echo "YES (${#VITE_FIREBASE_APP_ID} chars)" || echo NO)"
           #endregion
           npm run build
-          #region agent log 66f9c4 post-build bundle verification
-          echo "DEBUG 66f9c4 H1/H2: verifying Supabase URL embedded in bundle..."
-          BUNDLE=$(ls dist/assets/index-*.js | head -n 1)
-          echo "Bundle file: $BUNDLE"
-          if grep -q "supabase" "$BUNDLE"; then
-            echo "RESULT: 'supabase' string FOUND in bundle (H2 rejected)"
-          else
-            echo "RESULT: WARNING - 'supabase' string NOT found in bundle (H1/H4 confirmed)"
-          fi
-          if grep -q "${VITE_SUPABASE_URL:0:10}" "$BUNDLE" 2>/dev/null && [[ -n "${VITE_SUPABASE_URL:0:10}" ]]; then
-            echo "RESULT: Supabase URL prefix IS embedded in bundle"
-          else
-            echo "RESULT: WARNING - Supabase URL prefix NOT embedded in bundle"
-          fi
-          #endregion
 
       - name: Sync to S3
         run: aws s3 sync dist/ s3://${{ vars.S3_BUCKET_NAME }} --delete
