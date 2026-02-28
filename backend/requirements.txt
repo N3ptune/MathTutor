@@ -7,4 +7,9 @@ python-dotenv==1.2.1
 sympy==1.14.0
 firebase-admin>=6.0.0
 supabase>=2.0.0
-pdf2image pillow openai fastapi uvicorn aiohttp pytest pytest-asyncio httpx python-multipart
+pdf2image
+pillow
+aiohttp
+pytest
+pytest-asyncio
+python-multipart
