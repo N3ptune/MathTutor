@@ -49,7 +49,7 @@ jobs:
       - name: Deploy to App Runner
         run: |
           SERVICE_ARN_RAW='${{ vars.APPRUNNER_SERVICE_ARN }}'
-          SERVICE_ARN="$(printf '%s' "$SERVICE_ARN_RAW" | sed -E 's#(service/[^[:space:]]+)[[:space:]]+(backend/[[:alnum:]]+)#\1/\2#g')"
+          SERVICE_ARN="$SERVICE_ARN_RAW"
           IMAGE_IDENTIFIER='${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:latest'
           SOURCE_CONFIGURATION='{
             "ImageRepository": {
@@ -74,11 +74,13 @@ jobs:
           python3 - <<'PY'
           import json
           import os
+          import re
           import time
 
           log_path = "/Users/lmcnatt/Projects/MathTutor/.cursor/debug-511fd2.log"
           caller_arn = os.environ.get("CALLER_ARN", "")
           role_policy_raw = os.environ.get("ROLE_POLICY_RAW", "")
+          service_arn = os.environ.get("SERVICE_ARN", "")
 
           resource_candidates = []
           has_update_service = False
@@ -129,12 +131,25 @@ jobs:
               {
                   "sessionId": "511fd2",
                   "runId": "pre-fix",
+                  "hypothesisId": "H9",
+                  "location": ".github/workflows/backend-deploy.yml",
+                  "message": "Validated service ARN shape from repository variable",
+                  "data": {
+                      "serviceArn": service_arn,
+                      "serviceArnHasWhitespace": bool(re.search(r"\s", service_arn)),
+                      "serviceArnHasSlashBackendSegment": bool(re.search(r"service/[^/]+/backend/", service_arn)),
+                  },
+                  "timestamp": int(time.time() * 1000),
+              },
+              {
+                  "sessionId": "511fd2",
+                  "runId": "pre-fix",
                   "hypothesisId": "H8",
                   "location": ".github/workflows/backend-deploy.yml",
                   "message": "Compared deploy SERVICE_ARN with policy resource candidates",
                   "data": {
-                      "serviceArn": os.environ.get("SERVICE_ARN", ""),
-                      "serviceArnMatchesAnyPolicyResource": os.environ.get("SERVICE_ARN", "") in [str(r) for r in resource_candidates],
+                      "serviceArn": service_arn,
+                      "serviceArnMatchesAnyPolicyResource": service_arn in [str(r) for r in resource_candidates],
                   },
                   "timestamp": int(time.time() * 1000),
               },
@@ -151,7 +166,12 @@ jobs:
           #endregion
 
           if [[ "$SERVICE_ARN" =~ [[:space:]] ]]; then
-            echo "SERVICE_ARN still contains whitespace after sanitization: '$SERVICE_ARN'"
+            echo "Invalid APPRUNNER_SERVICE_ARN (contains whitespace). Set GitHub variable APPRUNNER_SERVICE_ARN to exact Terraform output module.apprunner service ARN."
+            exit 1
+          fi
+          if [[ "$SERVICE_ARN" =~ service/[^/]+/backend/ ]]; then
+            echo "Invalid APPRUNNER_SERVICE_ARN shape ('$SERVICE_ARN'). Expected ...:service/<name-with-backend>/<id>, but found ...:service/<name>/backend/<id>."
+            echo "Update GitHub variable APPRUNNER_SERVICE_ARN from Terraform output (apprunner service ARN)."
             exit 1
           fi
 
