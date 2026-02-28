@@ -16,3 +16,7 @@ backend/node_modules/
 # Build outputs
 dist/
 build/
+
+# Python venv
+backend/.venv/
+frontend/.venv/
