@@ -120,14 +120,6 @@ resource "aws_iam_role_policy" "backend_deploy" {
           "iam:PassRole",
         ]
         Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.name_prefix}-apprunner-ecr-access"
-        Condition = {
-          StringLike = {
-            "iam:PassedToService" = [
-              "apprunner.amazonaws.com",
-              "build.apprunner.amazonaws.com",
-            ]
-          }
-        }
       }
     ]
   })
