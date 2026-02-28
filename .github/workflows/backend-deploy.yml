@@ -48,87 +48,18 @@ jobs:
 
       - name: Deploy to App Runner
         run: |
-          SERVICE_ARN_RAW='${{ vars.APPRUNNER_SERVICE_ARN }}'
-          SERVICE_ARN="$SERVICE_ARN_RAW"
-          IMAGE_IDENTIFIER='${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:latest'
-          SOURCE_CONFIGURATION='{
-            "ImageRepository": {
-              "ImageIdentifier": "${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:latest",
-              "ImageRepositoryType": "ECR",
-              "ImageConfiguration": {
-                "Port": "8000"
-              }
-            },
-            "AuthenticationConfiguration": {
-              "AccessRoleArn": "${{ vars.APPRUNNER_ECR_ROLE_ARN }}"
-            },
-            "AutoDeploymentsEnabled": false
-          }'
-
-          export SERVICE_ARN IMAGE_IDENTIFIER SOURCE_CONFIGURATION
-
-          #region agent log
-          CALLER_ARN="$(aws sts get-caller-identity --query Arn --output text 2>&1 || true)"
-          DESCRIBE_RESULT="$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.Status' --output text 2>&1 || true)"
-          export CALLER_ARN DESCRIBE_RESULT
-          python3 - <<'PY'
-          import json
-          import os
-          import re
-          import time
-
-          log_path = "/Users/lmcnatt/Projects/MathTutor/.cursor/debug-511fd2.log"
-          caller_arn = os.environ.get("CALLER_ARN", "")
-          service_arn = os.environ.get("SERVICE_ARN", "")
-          describe_result = os.environ.get("DESCRIBE_RESULT", "")
-          source_config = os.environ.get("SOURCE_CONFIGURATION", "")
-          ecr_role_arn = ""
-          try:
-              ecr_role_arn = json.loads(source_config).get("AuthenticationConfiguration", {}).get("AccessRoleArn", "")
-          except Exception:
-              pass
-
-          payloads = [
-              {
-                  "sessionId": "511fd2",
-                  "runId": "post-condition-removal",
-                  "hypothesisId": "H10",
-                  "location": ".github/workflows/backend-deploy.yml",
-                  "message": "Pre-update diagnostics after Condition removal",
-                  "data": {
-                      "callerArn": caller_arn,
-                      "serviceArn": service_arn,
-                      "serviceArnValid": not bool(re.search(r"\s", service_arn)),
-                      "describeServiceResult": describe_result,
-                      "describeServiceOk": "AccessDenied" not in describe_result and "error" not in describe_result.lower(),
-                      "ecrAccessRoleArnFromConfig": ecr_role_arn,
-                      "ecrAccessRoleArnExpected": "arn:aws:iam::480009779030:role/mathtutor-prod-apprunner-ecr-access",
-                      "ecrAccessRoleArnMatch": ecr_role_arn == "arn:aws:iam::480009779030:role/mathtutor-prod-apprunner-ecr-access",
-                  },
-                  "timestamp": int(time.time() * 1000),
-              },
-          ]
-
-          for payload in payloads:
-              print(json.dumps(payload, ensure_ascii=True))
-              try:
-                  with open(log_path, "a", encoding="utf-8") as f:
-                      f.write(json.dumps(payload, ensure_ascii=True) + "\n")
-              except Exception:
-                  pass
-          PY
-          #endregion
-
-          if [[ "$SERVICE_ARN" =~ [[:space:]] ]]; then
-            echo "Invalid APPRUNNER_SERVICE_ARN (contains whitespace). Set GitHub variable APPRUNNER_SERVICE_ARN to exact Terraform output module.apprunner service ARN."
-            exit 1
-          fi
-          if [[ "$SERVICE_ARN" =~ service/[^/]+/backend/ ]]; then
-            echo "Invalid APPRUNNER_SERVICE_ARN shape ('$SERVICE_ARN'). Expected ...:service/<name-with-backend>/<id>, but found ...:service/<name>/backend/<id>."
-            echo "Update GitHub variable APPRUNNER_SERVICE_ARN from Terraform output (apprunner service ARN)."
-            exit 1
-          fi
-
           aws apprunner update-service \
-            --service-arn "$SERVICE_ARN" \
-            --source-configuration "$SOURCE_CONFIGURATION"
+            --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
+            --source-configuration '{
+              "ImageRepository": {
+                "ImageIdentifier": "${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:latest",
+                "ImageRepositoryType": "ECR",
+                "ImageConfiguration": {
+                  "Port": "8000"
+                }
+              },
+              "AuthenticationConfiguration": {
+                "AccessRoleArn": "${{ vars.APPRUNNER_ECR_ROLE_ARN }}"
+              },
+              "AutoDeploymentsEnabled": false
+            }'
