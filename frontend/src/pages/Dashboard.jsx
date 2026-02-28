@@ -1,9 +1,10 @@
-// Dashboard.jsx
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase.js";
 import { AuthState } from "../authState.jsx";
-import "./Dashboard.css";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 export default function Dashboard() {
   const { supabaseUser } = useContext(AuthState);
@@ -13,10 +14,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (!supabaseUser) return;
 
-    // Function fetchCourses takes in no arguments
-    // From table user_course it selects the courseId where userId is equal to the fetched userId
-    // Then, if no classes exist for this user, it displays no classes enrolled yet. Otherwise, it generates containers for each class that
-    // has a button to navigate to a dynamically populated page with the chosen class information.
     async function fetchCourses() {
       try {
         const { data: enrollmentData, error: enrollError } = await supabase
@@ -49,52 +46,75 @@ export default function Dashboard() {
     fetchCourses();
   }, [supabaseUser]);
 
-  // Returns three different sections:
-  // A header section that welcomes the user email from supabase
-  // A progress section that takes in information from supabase to generate statistics
-  // A class section that has containers for each class enrolled.
   return (
-    <div className="dashboard-container">
+    <div className="w-full max-w-6xl mx-auto px-6 py-10 flex flex-col gap-12">
 
       {/* Header Section */}
-      <div className="dashboard-header">
-        <h1 className="dashboard-welcome">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-primary">
           Welcome, {supabaseUser?.email || "Student"}
         </h1>
       </div>
 
       {/* Progress Section */}
-      <div className="progress-section">
-        <h2 className="section-title">Your Progress</h2>
-        <div className="stats-row">
-          <div className="stat-card">Proficiency Chart</div>
-          <div className="stat-card">Recent Activity</div>
-          <div className="stat-card">Time Spent</div>
+      <section>
+        <h2 className="text-2xl font-semibold text-center mb-6">Your Progress</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Proficiency Chart</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center h-32 text-muted-foreground">
+              Coming soon
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center h-32 text-muted-foreground">
+              Coming soon
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Time Spent</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center h-32 text-muted-foreground">
+              Coming soon
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </section>
+
+      <Separator />
 
       {/* Classes Section */}
-      <div className="classes-section">
-        <h2 className="section-title">Your Classes</h2>
+      <section>
+        <h2 className="text-2xl font-semibold text-center mb-6">Your Classes</h2>
 
-        <div className="classes-row">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {courses.length > 0 ? (
             courses.map((course) => (
-              <div key={course.courseId} className="class-card">
-                <h3>{course.name}</h3>
-                <button
-                  className="class-btn"
-                  onClick={() => navigate(`/course/${course.courseId}`)}
-                >
-                  Go to Class
-                </button>
-              </div>
+              <Card key={course.courseId}>
+                <CardHeader>
+                  <CardTitle>{course.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    className="w-full"
+                    onClick={() => navigate(`/course/${course.courseId}`)}
+                  >
+                    Go to Class
+                  </Button>
+                </CardContent>
+              </Card>
             ))
           ) : (
-            <p>No classes enrolled yet.</p>
+            <p className="col-span-full text-center text-muted-foreground">No classes enrolled yet.</p>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
