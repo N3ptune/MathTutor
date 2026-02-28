@@ -20,3 +20,4 @@ variable "github_repo" {
   description = "GitHub repository in org/repo format for OIDC trust"
   type        = string
 }
+
