@@ -16,7 +16,7 @@ def _get_client() -> openai.OpenAI:
 # returns first choice in case of split choices to ensure an option is always picked and nothing hangs
 async def send_ai_request(messages: list[dict], use_vision: bool = False) -> str:
     def call_openai():
-        response = _get_client.responses.create(
+        response = _get_client().responses.create(
             model = "gpt-5" if use_vision else "gpt-5-mini",
             input = messages
         )
@@ -30,3 +30,8 @@ async def send_ai_request(messages: list[dict], use_vision: bool = False) -> str
 def parse_ai_feedback(raw_text: str) -> list[str]:
     data = json.loads(raw_text)
     return data["feedback"]
+
+# takes in the raw text response from send_ai_request and returns a structured course format
+def parse_ai_course_structure(raw_text: str) -> dict:
+    data = json.loads(raw_text)
+    return data["course"]
