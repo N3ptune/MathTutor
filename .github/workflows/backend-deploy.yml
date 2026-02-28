@@ -96,7 +96,8 @@ jobs:
 
       - name: Deploy to App Runner
         run: |
-          SERVICE_ARN='${{ vars.APPRUNNER_SERVICE_ARN }}'
+          SERVICE_ARN_RAW='${{ vars.APPRUNNER_SERVICE_ARN }}'
+          SERVICE_ARN="$(printf '%s' "$SERVICE_ARN_RAW" | sed -E 's#(service/[^[:space:]]+)[[:space:]]+(backend/[[:alnum:]]+)#\1/\2#g')"
           IMAGE_IDENTIFIER='${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:latest'
           SOURCE_CONFIGURATION='{
             "ImageRepository": {
@@ -134,6 +135,7 @@ jobs:
                   "location": ".github/workflows/backend-deploy.yml",
                   "message": "Captured APPRUNNER_SERVICE_ARN tokenization",
                   "data": {
+                      "serviceArnRaw": os.environ.get("SERVICE_ARN_RAW", ""),
                       "serviceArn": service_arn,
                       "serviceArnHasWhitespace": bool(re.search(r"\s", service_arn)),
                       "serviceArnTokenCount": len(service_arn.split()),
@@ -181,6 +183,11 @@ jobs:
           PY
           #endregion
 
+          if [[ "$SERVICE_ARN" =~ [[:space:]] ]]; then
+            echo "SERVICE_ARN still contains whitespace after sanitization: '$SERVICE_ARN'"
+            exit 1
+          fi
+
           aws apprunner update-service \
-            --service-arn $SERVICE_ARN \
+            --service-arn "$SERVICE_ARN" \
             --source-configuration "$SOURCE_CONFIGURATION"
