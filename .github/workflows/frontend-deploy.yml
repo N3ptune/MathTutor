@@ -45,7 +45,7 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
@@ -56,7 +56,7 @@ jobs:
           #region agent log
           echo "DEBUG H1/H3: env var presence check (values redacted)"
           echo "VITE_SUPABASE_URL set: $([[ -n \"$VITE_SUPABASE_URL\" ]] && echo YES || echo NO)"
-          echo "VITE_SUPABASE_ANON_KEY set: $([[ -n \"$VITE_SUPABASE_ANON_KEY\" ]] && echo YES || echo NO)"
+          echo "VITE_SUPABASE_ANON_KEY set (from secrets): $([[ -n \"$VITE_SUPABASE_ANON_KEY\" ]] && echo YES || echo NO)"
           echo "VITE_FIREBASE_API_KEY set: $([[ -n \"$VITE_FIREBASE_API_KEY\" ]] && echo YES || echo NO)"
           #endregion
           npm run build
