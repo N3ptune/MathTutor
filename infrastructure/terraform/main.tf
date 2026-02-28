@@ -44,6 +44,7 @@ module "apprunner" {
 module "iam" {
   source                  = "./modules/iam"
   name_prefix             = local.name_prefix
+  environment             = var.environment
   github_repo             = var.github_repo
   s3_bucket_arn           = module.s3_frontend.bucket_arn
   cloudfront_distribution_arn = module.cloudfront.distribution_arn

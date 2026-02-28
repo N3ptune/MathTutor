@@ -1,10 +1,12 @@
 name: Frontend Deploy
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - "frontend/**"
+      - ".github/workflows/frontend-deploy.yml"
 
 permissions:
   id-token: write
@@ -45,14 +47,24 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
-          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
-        run: npm run build
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        run: |
+          #region agent log 66f9c4
+          echo "DEBUG 66f9c4 H5: all Firebase env vars check"
+          echo "VITE_FIREBASE_API_KEY set: $([[ -n "$VITE_FIREBASE_API_KEY" ]] && echo "YES (${#VITE_FIREBASE_API_KEY} chars)" || echo NO)"
+          echo "VITE_FIREBASE_AUTH_DOMAIN set: $([[ -n "$VITE_FIREBASE_AUTH_DOMAIN" ]] && echo "YES (${#VITE_FIREBASE_AUTH_DOMAIN} chars)" || echo NO)"
+          echo "VITE_FIREBASE_PROJECT_ID set: $([[ -n "$VITE_FIREBASE_PROJECT_ID" ]] && echo "YES (${#VITE_FIREBASE_PROJECT_ID} chars)" || echo NO)"
+          echo "VITE_FIREBASE_STORAGE_BUCKET set: $([[ -n "$VITE_FIREBASE_STORAGE_BUCKET" ]] && echo "YES (${#VITE_FIREBASE_STORAGE_BUCKET} chars)" || echo NO)"
+          echo "VITE_FIREBASE_MESSAGING_SENDER_ID set: $([[ -n "$VITE_FIREBASE_MESSAGING_SENDER_ID" ]] && echo "YES (${#VITE_FIREBASE_MESSAGING_SENDER_ID} chars)" || echo NO)"
+          echo "VITE_FIREBASE_APP_ID set: $([[ -n "$VITE_FIREBASE_APP_ID" ]] && echo "YES (${#VITE_FIREBASE_APP_ID} chars)" || echo NO)"
+          #endregion
+          npm run build
 
       - name: Sync to S3
         run: aws s3 sync dist/ s3://${{ vars.S3_BUCKET_NAME }} --delete

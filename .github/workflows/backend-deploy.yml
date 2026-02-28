@@ -48,113 +48,18 @@ jobs:
 
       - name: Deploy to App Runner
         run: |
-          SERVICE_ARN_RAW='${{ vars.APPRUNNER_SERVICE_ARN }}'
-          SERVICE_ARN="$(printf '%s' "$SERVICE_ARN_RAW" | sed -E 's#(service/[^[:space:]]+)[[:space:]]+(backend/[[:alnum:]]+)#\1/\2#g')"
-          IMAGE_IDENTIFIER='${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:latest'
-          SOURCE_CONFIGURATION='{
-            "ImageRepository": {
-              "ImageIdentifier": "${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:latest",
-              "ImageRepositoryType": "ECR",
-              "ImageConfiguration": {
-                "Port": "8000"
-              }
-            },
-            "AuthenticationConfiguration": {
-              "AccessRoleArn": "${{ vars.APPRUNNER_ECR_ROLE_ARN }}"
-            },
-            "AutoDeploymentsEnabled": false
-          }'
-
-          export SERVICE_ARN IMAGE_IDENTIFIER SOURCE_CONFIGURATION
-
-          #region agent log
-          CALLER_ARN="$(aws sts get-caller-identity --query Arn --output text 2>&1 || true)"
-          ROLE_POLICY_RAW="$(aws iam get-role-policy --role-name mathtutor-prod-github-actions --policy-name mathtutor-prod-backend-deploy --output json 2>&1 || true)"
-          export CALLER_ARN ROLE_POLICY_RAW
-          python3 - <<'PY'
-          import json
-          import os
-          import time
-
-          log_path = "/Users/lmcnatt/Projects/MathTutor/.cursor/debug-511fd2.log"
-          caller_arn = os.environ.get("CALLER_ARN", "")
-          role_policy_raw = os.environ.get("ROLE_POLICY_RAW", "")
-
-          resource_candidates = []
-          has_update_service = False
-          policy_fetch_ok = role_policy_raw.strip().startswith("{")
-
-          if policy_fetch_ok:
-              try:
-                  policy_doc = json.loads(role_policy_raw).get("PolicyDocument", {})
-                  statements = policy_doc.get("Statement", [])
-                  if isinstance(statements, dict):
-                      statements = [statements]
-                  for stmt in statements:
-                      actions = stmt.get("Action", [])
-                      if isinstance(actions, str):
-                          actions = [actions]
-                      if "apprunner:UpdateService" in actions:
-                          has_update_service = True
-                          resource_candidates.append(stmt.get("Resource"))
-              except Exception:
-                  policy_fetch_ok = False
-
-          payloads = [
-              {
-                  "sessionId": "511fd2",
-                  "runId": "pre-fix",
-                  "hypothesisId": "H6",
-                  "location": ".github/workflows/backend-deploy.yml",
-                  "message": "Captured caller ARN for deploy role",
-                  "data": {
-                      "callerArn": caller_arn,
-                  },
-                  "timestamp": int(time.time() * 1000),
-              },
-              {
-                  "sessionId": "511fd2",
-                  "runId": "pre-fix",
-                  "hypothesisId": "H7",
-                  "location": ".github/workflows/backend-deploy.yml",
-                  "message": "Captured backend deploy inline role policy summary",
-                  "data": {
-                      "policyFetchOk": policy_fetch_ok,
-                      "hasUpdateServiceAction": has_update_service,
-                      "updateServiceResources": resource_candidates,
-                      "policyFetchErrorSnippet": role_policy_raw[:300] if not policy_fetch_ok else "",
-                  },
-                  "timestamp": int(time.time() * 1000),
-              },
-              {
-                  "sessionId": "511fd2",
-                  "runId": "pre-fix",
-                  "hypothesisId": "H8",
-                  "location": ".github/workflows/backend-deploy.yml",
-                  "message": "Compared deploy SERVICE_ARN with policy resource candidates",
-                  "data": {
-                      "serviceArn": os.environ.get("SERVICE_ARN", ""),
-                      "serviceArnMatchesAnyPolicyResource": os.environ.get("SERVICE_ARN", "") in [str(r) for r in resource_candidates],
-                  },
-                  "timestamp": int(time.time() * 1000),
-              },
-          ]
-
-          for payload in payloads:
-              print(json.dumps(payload, ensure_ascii=True))
-              try:
-                  with open(log_path, "a", encoding="utf-8") as f:
-                      f.write(json.dumps(payload, ensure_ascii=True) + "\n")
-              except Exception:
-                  pass
-          PY
-          #endregion
-
-          if [[ "$SERVICE_ARN" =~ [[:space:]] ]]; then
-            echo "SERVICE_ARN still contains whitespace after sanitization: '$SERVICE_ARN'"
-            exit 1
-          fi
-
           aws apprunner update-service \
-            --service-arn "$SERVICE_ARN" \
-            --source-configuration "$SOURCE_CONFIGURATION"
+            --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
+            --source-configuration '{
+              "ImageRepository": {
+                "ImageIdentifier": "${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:latest",
+                "ImageRepositoryType": "ECR",
+                "ImageConfiguration": {
+                  "Port": "8000"
+                }
+              },
+              "AuthenticationConfiguration": {
+                "AccessRoleArn": "${{ vars.APPRUNNER_ECR_ROLE_ARN }}"
+              },
+              "AutoDeploymentsEnabled": false
+            }'
