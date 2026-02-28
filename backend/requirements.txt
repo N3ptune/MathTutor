@@ -1,0 +1,1 @@
+pdf2image pillow openai fastapi uvicorn aiohttp pytest pytest-asyncio httpx python-multipart

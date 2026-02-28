@@ -1,24 +1,91 @@
 from app.services.supabase_service import get_problem_text
 from app.services.ai_service import send_ai_request, parse_ai_feedback
 
+import json
+
 # Takes in the problemId from supabase, and the steps submitted from the front end
 # First snages the problem text from the database. Maybe this could be better implemented in the future by sending that as part
 # of the frontend data package
 # Then it generates the prompt that it makes from the steps package
 # Then it takes the response grabbed from the api, and turns that into feedback per step, which it returns to the frontend to be thrown up
-async def evaluate_steps(problemId: int, steps: list[str]):
+async def evaluate_steps(problemId: int, steps: list[str], image_base64_list: list[str] | None = None):
     problem_text = await get_problem_text(problemId)
 
-    messages = [
-        {"role": "system", "content": "You are a helpful math tutor. Evaluate each step of the student's solution. Do not add any headers like evaluation or labelling the step. Simply respond with feedback on each step, separated by newline characters. Do not give away any answers, your feedback is supposed to only encourage them in the right direction."},
-        {"role": "user", "content": f"Problem: {problem_text}"}
-    ]
+    # If it's an image
+    if image_base64_list:
+        prompt = f"""
+You are a helpful math tutor.
 
-    for i, step in enumerate(steps):
-        messages.append({"role": "user", "content": f"Step {i+1}: {step}"})
+A student submitted a handwritten solution image.
 
-    raw_feedback = await send_ai_request(messages)
+1. Extract the steps the student took in order, with the exact math that the user submitted.
+2. Evaluate each step.
+3. Do NOT give away the final answer.
 
-    feedback_per_step = parse_ai_feedback(raw_feedback)
+Respond ONLY with valid JSON in this format:
 
-    return feedback_per_step
+{{
+  "extracted_steps": [
+    "step 1 text",
+    "step 2 text"
+  ],
+  "feedback": [
+    "feedback for step 1",
+    "feedback for step 2"
+  ]
+}}
+
+Do not give more evaluations than steps, and do not give feedback for steps that don't exist. If you can't extract any steps, return an empty array for extracted_steps and give general feedback on the problem-solving approach in the feedback array.
+
+Problem:
+{problem_text}
+"""
+
+        content = [
+            {
+                "type": "input_text",
+                "text": prompt
+            },
+        ]
+
+        for img_base64 in image_base64_list:
+            content.append({
+                "type": "input_image",
+                "image_url": f"data:image/png;base64,{img_base64}"
+            })
+
+    # If it's text
+    else:
+        prompt = f"""
+You are a helpful math tutor.
+Evaluate each step.
+Respond ONLY with JSON:
+
+{{
+  "feedback": [
+    "feedback 1",
+    "feedback 2"
+  ]
+}}
+
+Problem:
+{problem_text}
+
+Steps:
+{steps}
+"""
+
+        content = [
+            {
+                "type": "input_text",
+                "text": prompt
+            }
+        ]
+
+    messages = [{"role": "user", "content": content}]
+
+    raw_response = await send_ai_request(messages)
+
+    data = json.loads(raw_response)
+
+    return data
