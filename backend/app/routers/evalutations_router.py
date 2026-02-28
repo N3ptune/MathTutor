@@ -31,7 +31,7 @@ async def evaluate(problemId: int = Form(...), steps: str = Form(...), image: Op
             contents = await image.read()
 
             if filename.endswith('.pdf'):
-                images = convert_from_bytes(contents)
+                images = convert_from_bytes(contents, poppler_path=r"C:\Users\jason\Poppler\poppler-25.12.0\Library\bin")
                 for img in images:
                     buffered = io.BytesIO()
                     img.save(buffered, format="PNG")
