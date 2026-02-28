@@ -84,6 +84,11 @@ resource "aws_iam_role_policy" "apprunner_ssm_read" {
           "ssm:GetParametersByPath",
         ]
         Resource = var.ssm_parameter_arns
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
+        Resource = "*"
       }
     ]
   })
@@ -119,6 +124,8 @@ resource "aws_apprunner_service" "backend" {
           ALLOWED_ORIGINS = "https://${var.cloudfront_url}"
           SSM_PREFIX      = var.ssm_prefix
         }
+
+        runtime_environment_secrets = var.ssm_parameter_arn_map
       }
     }
 

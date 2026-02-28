@@ -16,6 +16,11 @@ variable "ssm_prefix" {
   type        = string
 }
 
+variable "ssm_parameter_arn_map" {
+  description = "Map of secret name to SSM parameter ARN for runtime injection"
+  type        = map(string)
+}
+
 variable "cloudfront_url" {
   description = "CloudFront domain for CORS allowed origins"
   type        = string

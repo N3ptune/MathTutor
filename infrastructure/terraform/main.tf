@@ -32,12 +32,13 @@ module "cloudfront" {
 }
 
 module "apprunner" {
-  source             = "./modules/apprunner"
-  name_prefix        = local.name_prefix
-  ecr_repository_url = module.ecr.repository_url
-  ssm_parameter_arns = module.ssm.parameter_arns
-  ssm_prefix         = module.ssm.parameter_prefix
-  cloudfront_url     = module.cloudfront.distribution_domain_name
+  source                = "./modules/apprunner"
+  name_prefix           = local.name_prefix
+  ecr_repository_url    = module.ecr.repository_url
+  ssm_parameter_arns    = module.ssm.parameter_arns
+  ssm_parameter_arn_map = module.ssm.parameter_arn_map
+  ssm_prefix            = module.ssm.parameter_prefix
+  cloudfront_url        = module.cloudfront.distribution_domain_name
 }
 
 module "iam" {

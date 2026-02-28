@@ -1,15 +1,18 @@
 import openai
-import os
 
-openai_key = os.environ.get("OPENAI_API_KEY")
+_client = None
 
-client = openai.OpenAI()
+def _get_client() -> openai.OpenAI:
+    global _client
+    if _client is None:
+        _client = openai.OpenAI()
+    return _client
 
 # Takes in the messages from the router
 # Sends a message to ai of choice and returns the response
 # returns first choice in case of split choices to ensure an option is always picked and nothing hangs
 async def send_ai_request(messages: list[dict]) -> str:
-    response = client.responses.create(
+    response = _get_client().responses.create(
         model = "gpt-5",
         input = messages
     )
