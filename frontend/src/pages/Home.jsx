@@ -150,7 +150,7 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, delay: 0.2 }}
       >
-        Let's get you solving
+        Your AI-powered math tutor
       </motion.h2>
 
       {!user && (
