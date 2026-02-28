@@ -31,3 +31,7 @@ frontend/.venv/
 *.tfstate
 *.tfstate.backup
 *.tfplan
+
+# Local debug artifacts
+.cursor/debug-*.log
+backend/debug_requirements_probe.py
