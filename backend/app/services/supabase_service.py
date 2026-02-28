@@ -24,3 +24,35 @@ async def get_problem_text(problem_id: int) -> str:
         raise Exception("Problem not found")
     
     return data[0]["problem"]
+
+async def push_course_to_supabase(course_data: dict):
+    url = f"{SUPABASE_URL}/rest/v1/courses"
+
+    headers = {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": f"Bearer  {SUPABASE_ANON_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    course_title = course_data["title"]
+    
+    async with httpx.AsyncClient() as client:
+        course_resp = await client.post(url, headers=headers, json={"title": course_title})
+        course_resp.raise_for_status()
+        course_id = course_resp.json()[0]["id"]
+
+        for section in course_data["sections"]:
+            section_title = section["title"]
+            section_resp = await client.post(f"{url}/sections", headers=headers, json={"title": section_title, "course_id": course_id})
+            section_resp.raise_for_status()
+            section_id = section_resp.json()[0]["id"]
+
+            for problem in section["problems"]:
+                problem_data = {
+                    "description": problem["description"],
+                    "problem": problem["problem"],
+                    "section_id": section_id
+                }
+                problem_resp = await client.post(f"{url}/problems", headers=headers, json=problem_data)
+                problem_resp.raise_for_status()
+
