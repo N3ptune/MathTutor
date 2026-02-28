@@ -216,7 +216,7 @@ resource "aws_iam_role_policy" "terraform_deploy" {
           "ssm:ListTagsForResource",
           "ssm:RemoveTagsFromResource",
         ]
-        Resource = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.name_prefix}/*"
+        Resource = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/mathtutor/${var.environment}/*"
       },
       {
         Effect   = "Allow"
