@@ -11,15 +11,14 @@ import {
   browserSessionPersistence
 } from "firebase/auth";
 
-// Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyAMjHhEku57UwIBxBM4qcoDTJPvTzEk5Ec",
-  authDomain: "mathtutor-4b872.firebaseapp.com",
-  projectId: "mathtutor-4b872",
-  storageBucket: "mathtutor-4b872.firebasestorage.app",
-  messagingSenderId: "1037179980562",
-  appId: "1:1037179980562:web:e7c16a12b5ff91146cc1cb",
-  measurementId: "G-44XLRGT2WP"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase

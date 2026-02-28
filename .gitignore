@@ -4,6 +4,8 @@
 # Environment variables
 .env
 **/.env
+*.tfvars
+!*.tfvars.example
 
 # Python cache
 __pycache__/
@@ -20,3 +22,9 @@ build/
 # Python venv
 backend/.venv/
 frontend/.venv/
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan

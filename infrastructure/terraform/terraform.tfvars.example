@@ -1,0 +1,6 @@
+aws_region   = "us-east-1"
+project_name = "mathtutor"
+environment  = "prod"
+
+# Your GitHub repo in owner/repo format
+github_repo = "your-username/MathTutor"
