@@ -114,6 +114,18 @@ resource "aws_iam_role_policy" "backend_deploy" {
           "arn:aws:apprunner:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:service/${var.name_prefix}/*",
         ]
       }
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:PassRole",
+        ]
+        Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.name_prefix}-apprunner-ecr-access"
+        Condition = {
+          StringEquals = {
+            "iam:PassedToService" = "apprunner.amazonaws.com"
+          }
+        }
+      }
     ]
   })
 }
