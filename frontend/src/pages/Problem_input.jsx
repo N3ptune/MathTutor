@@ -12,6 +12,7 @@ export default function ProblemInput() {
   const [steps, setSteps] = useState([""]);
   const [feedback, setFeedback] = useState([]);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
 
   // Takes no arguments
   // Fetches the arguments from supabase, and then stores the problem text
@@ -63,6 +64,17 @@ export default function ProblemInput() {
     setFeedback(updatedFeedback);
   };
 
+  // Takes in the event of the image upload, which is when a file is selected
+  // Will set the image file to be the file that was selected, which can then be sent to the backend when the steps are submitted
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setSteps([""]); // Trigger re-render to ensure feedback boxes update
+    setFeedback([]); // Trigger re-render to ensure feedback boxes update
+    setImageFile(file);
+  }
+
   // Takes no argumnets
   // Takes the steps, and will pass them to a processor that will format them to be submitted to backend
   // Will then set the feedback to be shown, which will also be processed in the backend
@@ -73,17 +85,27 @@ export default function ProblemInput() {
     //Log what you're sending
     console.log("Submitting steps:", steps);
     console.log("Submitting problemId:", problemId);
+    console.log("Submitting imageFile:", imageFile);
+
+    const formData = new FormData();
+    formData.append("problemId", problemId);
+    formData.append("steps", JSON.stringify(steps));
+
+    if (imageFile) {
+      formData.append("image", imageFile);
+    }
 
     // Make sure problemId is a number
-    const bodyData = { problemId: Number(problemId), steps };
-    console.log("POST body:", bodyData);
+    // const bodyData = { problemId: Number(problemId), steps };
+    // console.log("POST body:", bodyData);
 
     // Send request
     const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
     const response = await fetch(`${apiUrl}/api/evaluate/`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bodyData),
+      // headers: { "Content-Type": "application/json" },
+      // body: JSON.stringify(bodyData),
+      body: formData,
     });
 
     // Log response status
@@ -100,11 +122,15 @@ export default function ProblemInput() {
     }
 
     // Update feedback
-    setFeedback(data.feedback || steps.map(() => "No feedback received"));
+    if (data.extracted_steps) {
+      setSteps(data.extracted_steps);
+    }
 
-  } catch (err) {
-    console.error("Evaluation error:", err);
-  }
+    setFeedback(data.feedback || []); 
+
+    } catch (err) {
+      console.error("Evaluation error:", err);
+    }
 
   setIsEvaluating(false);
 };
@@ -160,6 +186,15 @@ export default function ProblemInput() {
             + Add Step
           </button>
         </div>
+      </div>
+
+      {/* IMAGE UPLOAD CHANGE THIS IF YOU NEED*/}
+      <div>
+        <input 
+          type="file"
+          accept="image/*, .pdf"
+          onChange={handleImageUpload}
+          />
       </div>
 
       {/* SUBMIT BUTTON */}
