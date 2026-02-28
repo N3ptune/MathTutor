@@ -22,3 +22,8 @@ variable "ecr_repository_arn" {
 variable "apprunner_service_arn" {
   type = string
 }
+
+variable "environment" {
+  description = "Deployment environment (e.g. prod)"
+  type        = string
+}
