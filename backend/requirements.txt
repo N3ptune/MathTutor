@@ -1,1 +1,10 @@
+fastapi==0.124.0
+uvicorn==0.38.0
+openai==2.9.0
+httpx==0.28.1
+pydantic>=2.11.0
+python-dotenv==1.2.1
+sympy==1.14.0
+firebase-admin>=6.0.0
+supabase>=2.0.0
 pdf2image pillow openai fastapi uvicorn aiohttp pytest pytest-asyncio httpx python-multipart
