@@ -34,4 +34,6 @@ frontend/.venv/
 
 # Local debug artifacts
 .cursor/debug-*.log
+.cursor/
+.vscode/
 backend/debug_requirements_probe.py

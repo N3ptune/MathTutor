@@ -46,18 +46,91 @@ jobs:
 
       - name: Deploy to App Runner
         run: |
+          SERVICE_ARN='${{ vars.APPRUNNER_SERVICE_ARN }}'
+          IMAGE_IDENTIFIER='${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:latest'
+          SOURCE_CONFIGURATION='{
+            "ImageRepository": {
+              "ImageIdentifier": "${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:latest",
+              "ImageRepositoryType": "ECR",
+              "ImageConfiguration": {
+                "Port": "8000"
+              }
+            },
+            "AuthenticationConfiguration": {
+              "AccessRoleArn": "${{ vars.APPRUNNER_ECR_ROLE_ARN }}"
+            },
+            "AutoDeploymentsEnabled": false
+          }'
+
+          export SERVICE_ARN IMAGE_IDENTIFIER SOURCE_CONFIGURATION
+
+          #region agent log
+          python3 - <<'PY'
+          import json
+          import time
+          import re
+          import os
+
+          log_path = "/Users/lmcnatt/Projects/MathTutor/.cursor/debug-511fd2.log"
+          service_arn = os.environ.get("SERVICE_ARN", "")
+          image_identifier = os.environ.get("IMAGE_IDENTIFIER", "")
+          source_configuration = os.environ.get("SOURCE_CONFIGURATION", "")
+
+          payloads = [
+              {
+                  "sessionId": "511fd2",
+                  "runId": "pre-fix",
+                  "hypothesisId": "H1",
+                  "location": ".github/workflows/backend-deploy.yml",
+                  "message": "Captured APPRUNNER_SERVICE_ARN tokenization",
+                  "data": {
+                      "serviceArn": service_arn,
+                      "serviceArnHasWhitespace": bool(re.search(r"\s", service_arn)),
+                      "serviceArnTokenCount": len(service_arn.split()),
+                      "serviceArnLooksLikeArn": service_arn.startswith("arn:aws:apprunner:"),
+                  },
+                  "timestamp": int(time.time() * 1000),
+              },
+              {
+                  "sessionId": "511fd2",
+                  "runId": "pre-fix",
+                  "hypothesisId": "H2",
+                  "location": ".github/workflows/backend-deploy.yml",
+                  "message": "Captured image identifier used for update-service",
+                  "data": {
+                      "imageIdentifier": image_identifier,
+                      "imageIdentifierHasWhitespace": bool(re.search(r"\s", image_identifier)),
+                  },
+                  "timestamp": int(time.time() * 1000),
+              },
+              {
+                  "sessionId": "511fd2",
+                  "runId": "pre-fix",
+                  "hypothesisId": "H3",
+                  "location": ".github/workflows/backend-deploy.yml",
+                  "message": "Validated source configuration JSON before aws call",
+                  "data": {
+                      "sourceConfigurationJsonValid": True,
+                  },
+                  "timestamp": int(time.time() * 1000),
+              },
+          ]
+
+          try:
+              json.loads(source_configuration)
+          except Exception:
+              payloads[2]["data"]["sourceConfigurationJsonValid"] = False
+
+          for payload in payloads:
+              print(json.dumps(payload, ensure_ascii=True))
+              try:
+                  with open(log_path, "a", encoding="utf-8") as f:
+                      f.write(json.dumps(payload, ensure_ascii=True) + "\n")
+              except Exception:
+                  pass
+          PY
+          #endregion
+
           aws apprunner update-service \
-            --service-arn ${{ vars.APPRUNNER_SERVICE_ARN }} \
-            --source-configuration '{
-              "ImageRepository": {
-                "ImageIdentifier": "${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:latest",
-                "ImageRepositoryType": "ECR",
-                "ImageConfiguration": {
-                  "Port": "8000"
-                }
-              },
-              "AuthenticationConfiguration": {
-                "AccessRoleArn": "${{ vars.APPRUNNER_ECR_ROLE_ARN }}"
-              },
-              "AutoDeploymentsEnabled": false
-            }'
+            --service-arn $SERVICE_ARN \
+            --source-configuration "$SOURCE_CONFIGURATION"
