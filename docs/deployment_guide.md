@@ -2,6 +2,27 @@
 
 Step-by-step instructions for first-time deployment and ongoing operations.
 
+## Quick Local Deploy (Backend + Frontend)
+
+Use this when you want to run both services locally instead of AWS.
+
+```bash
+cd /path/to/MathTutor
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+
+# Fill in real values in backend/.env and frontend/.env
+
+docker-compose -f docker-compose.local.yml up --build
+```
+
+Endpoints:
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:8000`
+- Health: `http://localhost:8000/health`
+
+---
+
 ## Prerequisites
 
 - AWS CLI configured with admin-level credentials
