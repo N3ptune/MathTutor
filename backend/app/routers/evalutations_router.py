@@ -1,3 +1,5 @@
+from importlib.resources import contents
+
 from fastapi import APIRouter, HTTPException, File, UploadFile, Form
 from typing import Optional
 from pydantic import BaseModel
@@ -7,6 +9,7 @@ import json
 import base64
 from app.workers.evaluation_worker import evaluate_steps
 import sympy as sp
+import sys
 
 router = APIRouter(prefix="/evaluate", tags=["Evaluation"])
 
@@ -30,8 +33,14 @@ async def evaluate(problemId: int = Form(...), steps: str = Form(...), image: Op
             filename = image.filename.lower()
             contents = await image.read()
 
+            poppler_path = None
+            if sys.platform.startswith("win"):
+                poppler_path = r"C:\Users\jason\Poppler\poppler-25.12.0\Library\bin"
+            else:
+                poppler_path = "/usr/bin"
+
             if filename.endswith('.pdf'):
-                images = convert_from_bytes(contents, poppler_path=r"C:\Users\jason\Poppler\poppler-25.12.0\Library\bin")
+                images = convert_from_bytes(contents, poppler_path=poppler_path)
                 for img in images:
                     buffered = io.BytesIO()
                     img.save(buffered, format="PNG")

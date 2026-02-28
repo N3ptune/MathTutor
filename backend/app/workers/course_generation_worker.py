@@ -2,7 +2,7 @@ from app.services.ai_service import send_ai_request, parse_ai_course_structure
 
 async def generate_course(topic: str):
     prompt = f"""
-You are a helpful tutor that creates comprehensive courses on various topics.
+You are a math professor that creates comprehensive courses on various topics.
 Create a course for Supabase insertion on the following topic: {topic}.
 Include:
 - Course title
