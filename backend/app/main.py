@@ -1,13 +1,8 @@
 import os
-import sys
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import evalutations_router
-
-# #region agent log
-print("[DEBUG] All imports succeeded, creating FastAPI app", file=sys.stderr, flush=True)
-# #endregion
 
 app = FastAPI(title="MathTutor API", version="1.0.0")
 

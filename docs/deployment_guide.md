@@ -130,7 +130,6 @@ export VITE_FIREBASE_PROJECT_ID=your-project-id
 export VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
 export VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 export VITE_FIREBASE_APP_ID=your-app-id
-export VITE_FIREBASE_MEASUREMENT_ID=your-measurement-id
 
 npm ci
 npm run build
@@ -165,7 +164,6 @@ In your GitHub repository settings:
 - `VITE_FIREBASE_STORAGE_BUCKET` = your Firebase storage bucket
 - `VITE_FIREBASE_MESSAGING_SENDER_ID` = your Firebase sender ID
 - `VITE_FIREBASE_APP_ID` = your Firebase app ID
-- `VITE_FIREBASE_MEASUREMENT_ID` = your Firebase measurement ID
 
 ---
 
