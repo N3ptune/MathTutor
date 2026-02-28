@@ -1,15 +1,24 @@
 import { useContext, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { AuthState } from "../authState.jsx";
-import { 
-  loginWithGoogle, 
-  registerEmailPassword, 
+import {
+  loginWithGoogle,
+  registerEmailPassword,
   loginEmailPassword,
   isFirebaseAuthConfigured,
 } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase.js";
-import "./Home.css";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -25,20 +34,16 @@ export default function Home() {
   const [regPassword, setRegPassword] = useState("");
   const [regConfirm, setRegConfirm] = useState("");
 
-  // Redirect to dashboard if both Firebase user and Supabase user exist
   useEffect(() => {
     if (user) navigate("/dashboard");
   }, [user, navigate]);
 
-  // Login using email, first trying firebase, and then making sure that the user also exists in supabase
   async function handleLoginEmail() {
     if (!isFirebaseAuthConfigured) {
       return;
     }
     try {
-
       const userCred = await loginEmailPassword(loginEmail, loginPassword);
-
 
       const { data, error } = await supabase
         .from("users")
@@ -57,8 +62,6 @@ export default function Home() {
     }
   }
 
-  // Register using Firebase, then push the email and firebase_uid to supabase for imformation parsing
-  // Ensures that the passwords match.
   async function handleRegisterEmail() {
     if (!isFirebaseAuthConfigured) {
       return;
@@ -69,7 +72,6 @@ export default function Home() {
     }
 
     try {
-
       const userCred = await registerEmailPassword(regEmail, regPassword);
 
       const { data, error } = await supabase
@@ -94,7 +96,6 @@ export default function Home() {
     }
   }
 
-  // Logs in with google, functions as both login and register, which is pretty cool.
   async function handleGoogleLogin() {
     if (!isFirebaseAuthConfigured) {
       return;
@@ -134,9 +135,9 @@ export default function Home() {
   }
 
   return (
-    <div className="home-container">
+    <div className="relative w-full min-h-screen bg-background overflow-hidden flex flex-col items-center justify-center">
       <motion.h1
-        className="home-title"
+        className="text-5xl font-bold text-primary mb-4 z-10"
         initial={{ opacity: 0, y: -40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1 }}
@@ -145,7 +146,7 @@ export default function Home() {
       </motion.h1>
 
       <motion.h2
-        className="home-subtitle"
+        className="text-2xl text-foreground mb-10 z-10"
         initial={{ opacity: 0, y: -40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, delay: 0.2 }}
@@ -154,82 +155,115 @@ export default function Home() {
       </motion.h2>
 
       {!user && (
-        <div className="home-buttons">
-          <button className="home-button" onClick={() => setShowLogin(true)} disabled={!isFirebaseAuthConfigured}>
+        <div className="flex gap-4 z-10">
+          <Button size="lg" onClick={() => setShowLogin(true)} disabled={!isFirebaseAuthConfigured}>
             Sign In
-          </button>
-          <button className="home-button" onClick={() => setShowRegister(true)} disabled={!isFirebaseAuthConfigured}>
+          </Button>
+          <Button size="lg" variant="outline" onClick={() => setShowRegister(true)} disabled={!isFirebaseAuthConfigured}>
             Register
-          </button>
+          </Button>
         </div>
       )}
 
       {!isFirebaseAuthConfigured && (
-        <p style={{ marginTop: "1rem", color: "#fca5a5" }}>
+        <p className="mt-4 text-destructive text-sm">
           Firebase auth is not configured. Add VITE_FIREBASE_* values in frontend/.env to enable sign-in.
         </p>
       )}
 
-      {/* LOGIN MODAL */}
-      {showLogin && (
-        <div className="home-modal-overlay">
-          <div className="home-modal">
-            <button className="modal-close-button" onClick={() => setShowLogin(false)}>×</button>
-            <h3>Sign In</h3>
-            <input
-              className="modal-input"
-              type="email"
-              placeholder="Email"
-              value={loginEmail}
-              onChange={(e) => setLoginEmail(e.target.value)}
-            />
-            <input
-              className="modal-input"
-              type="password"
-              placeholder="Password"
-              value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
-            />
-            <button className="home-button" onClick={handleLoginEmail}>Sign In</button>
-            <p style={{ marginTop: "1rem" }}>or</p>
-            <button className="home-button" onClick={handleGoogleLogin}>Sign in with Google</button>
+      {/* LOGIN DIALOG */}
+      <Dialog open={showLogin} onOpenChange={setShowLogin}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sign In</DialogTitle>
+            <DialogDescription>Enter your credentials to continue.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="login-email">Email</Label>
+              <Input
+                id="login-email"
+                type="email"
+                placeholder="Email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="login-password">Password</Label>
+              <Input
+                id="login-password"
+                type="password"
+                placeholder="Password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleLoginEmail}>Sign In</Button>
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">or</span>
+              </div>
+            </div>
+            <Button variant="outline" onClick={handleGoogleLogin}>Sign in with Google</Button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
-      {/* REGISTER MODAL */}
-      {showRegister && (
-        <div className="home-modal-overlay">
-          <div className="home-modal">
-            <button className="modal-close-button" onClick={() => setShowRegister(false)}>×</button>
-            <h3>Create Account</h3>
-            <input
-              className="modal-input"
-              type="email"
-              placeholder="Email"
-              value={regEmail}
-              onChange={(e) => setRegEmail(e.target.value)}
-            />
-            <input
-              className="modal-input"
-              type="password"
-              placeholder="Password"
-              value={regPassword}
-              onChange={(e) => setRegPassword(e.target.value)}
-            />
-            <input
-              className="modal-input"
-              type="password"
-              placeholder="Confirm Password"
-              value={regConfirm}
-              onChange={(e) => setRegConfirm(e.target.value)}
-            />
-            <button className="home-button" onClick={handleRegisterEmail}>Register</button>
-            <p style={{ marginTop: "1rem" }}>or</p>
-            <button className="home-button" onClick={handleGoogleLogin}>Sign up with Google</button>
+      {/* REGISTER DIALOG */}
+      <Dialog open={showRegister} onOpenChange={setShowRegister}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Account</DialogTitle>
+            <DialogDescription>Fill in your details to get started.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="reg-email">Email</Label>
+              <Input
+                id="reg-email"
+                type="email"
+                placeholder="Email"
+                value={regEmail}
+                onChange={(e) => setRegEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reg-password">Password</Label>
+              <Input
+                id="reg-password"
+                type="password"
+                placeholder="Password"
+                value={regPassword}
+                onChange={(e) => setRegPassword(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reg-confirm">Confirm Password</Label>
+              <Input
+                id="reg-confirm"
+                type="password"
+                placeholder="Confirm Password"
+                value={regConfirm}
+                onChange={(e) => setRegConfirm(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleRegisterEmail}>Register</Button>
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">or</span>
+              </div>
+            </div>
+            <Button variant="outline" onClick={handleGoogleLogin}>Sign up with Google</Button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

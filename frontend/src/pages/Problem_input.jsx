@@ -1,11 +1,23 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase";
 import { AuthState } from "../authState.jsx";
-import "./ProblemInput.css";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ArrowLeft } from "lucide-react";
 
 export default function ProblemInput() {
   const { problemId } = useParams();
+  const navigate = useNavigate();
   const { supabaseUser } = useContext(AuthState);
 
   const [problemText, setProblemText] = useState("");
@@ -14,8 +26,6 @@ export default function ProblemInput() {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [imageFile, setImageFile] = useState(null);
 
-  // Takes no arguments
-  // Fetches the arguments from supabase, and then stores the problem text
   useEffect(() => {
     if (!supabaseUser) return;
 
@@ -38,25 +48,18 @@ export default function ProblemInput() {
     fetchProblem();
   }, [problemId, supabaseUser]);
 
-  // Takes in the text that should be replaced
-  // Will convert text to the proper symbols, so that the problem does not look messy.
-  // Implementation of limits and integral will be very interesting
   const convertInput = (text) => {
-    return text.replace(/sqrt\(/gi, "√(");
+    return text.replace(/sqrt\(/gi, "\u221A(");
   };
 
-  // Takes in the index, which is the number step it is, and value, which is whatever is being typed into the box
   const updateStep = (index, value) => {
     const newSteps = [...steps];
     newSteps[index] = convertInput(value);
     setSteps(newSteps);
   };
 
-  // Adds a step below existing steps
   const addStep = () => setSteps([...steps, ""]);
 
-  // Takes in the index of the step that is being deleted
-  // Deletes a step, changes indexes and relevant correlatedinformation if necessary
   const deleteStep = (index) => {
     const updatedSteps = steps.filter((_, i) => i !== index);
     const updatedFeedback = feedback.filter((_, i) => i !== index);
@@ -64,155 +67,145 @@ export default function ProblemInput() {
     setFeedback(updatedFeedback);
   };
 
-  // Takes in the event of the image upload, which is when a file is selected
-  // Will set the image file to be the file that was selected, which can then be sent to the backend when the steps are submitted
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    setSteps([""]); // Trigger re-render to ensure feedback boxes update
-    setFeedback([]); // Trigger re-render to ensure feedback boxes update
+    setSteps([""]);
+    setFeedback([]);
     setImageFile(file);
-  }
+  };
 
-  // Takes no argumnets
-  // Takes the steps, and will pass them to a processor that will format them to be submitted to backend
-  // Will then set the feedback to be shown, which will also be processed in the backend
   const handleSubmit = async () => {
-  setIsEvaluating(true);
+    setIsEvaluating(true);
 
-  try {
-    //Log what you're sending
-    console.log("Submitting steps:", steps);
-    console.log("Submitting problemId:", problemId);
-    console.log("Submitting imageFile:", imageFile);
-
-    const formData = new FormData();
-    formData.append("problemId", problemId);
-    formData.append("steps", JSON.stringify(steps));
-
-    if (imageFile) {
-      formData.append("image", imageFile);
-    }
-
-    // Make sure problemId is a number
-    // const bodyData = { problemId: Number(problemId), steps };
-    // console.log("POST body:", bodyData);
-
-    // Send request
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-    const response = await fetch(`${apiUrl}/api/evaluate/`, {
-      method: "POST",
-      // headers: { "Content-Type": "application/json" },
-      // body: JSON.stringify(bodyData),
-      body: formData,
-    });
-
-    // Log response status
-    console.log("Response status:", response.status);
-
-    // Parse JSON safely
-    let data;
     try {
-      data = await response.json();
-      console.log("Response JSON:", data);
-    } catch (jsonErr) {
-      console.error("Failed to parse JSON:", jsonErr);
-      data = {};
-    }
+      console.log("Submitting steps:", steps);
+      console.log("Submitting problemId:", problemId);
+      console.log("Submitting imageFile:", imageFile);
 
-    // Update feedback
-    if (data.extracted_steps) {
-      setSteps(data.extracted_steps);
-    }
+      const formData = new FormData();
+      formData.append("problemId", problemId);
+      formData.append("steps", JSON.stringify(steps));
 
-    setFeedback(data.feedback || []); 
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
 
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const response = await fetch(`${apiUrl}/api/evaluate/`, {
+        method: "POST",
+        body: formData,
+      });
+
+      console.log("Response status:", response.status);
+
+      let data;
+      try {
+        data = await response.json();
+        console.log("Response JSON:", data);
+      } catch (jsonErr) {
+        console.error("Failed to parse JSON:", jsonErr);
+        data = {};
+      }
+
+      if (data.extracted_steps) {
+        setSteps(data.extracted_steps);
+      }
+
+      setFeedback(data.feedback || []);
     } catch (err) {
       console.error("Evaluation error:", err);
     }
 
-  setIsEvaluating(false);
-};
-
+    setIsEvaluating(false);
+  };
 
   return (
-    <div className="problem-input-container">
-      <div className="problem-header">Solve the Problem</div>
+    <div className="max-w-4xl mx-auto px-6 py-10 flex flex-col items-center">
+      <div className="w-full mb-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <ArrowLeft className="size-4" />
+          Back
+        </Button>
+      </div>
+      <h1 className="text-2xl font-bold mb-6">Solve the Problem</h1>
 
       {/* Problem Display */}
-      <div className="problem-display">
-        <p className="problem-text">{problemText || "Loading problem..."}</p>
-      </div>
+      <Card className="w-full mb-8">
+        <CardContent>
+          <p className="text-lg">{problemText || "Loading problem..."}</p>
+        </CardContent>
+      </Card>
 
-      <div className="content-row">
+      {/* Steps */}
+      <div className="w-full space-y-4 mb-8">
+        <h2 className="text-xl font-semibold">Steps</h2>
 
-        {/* LEFT — STEPS */}
-        <div className="steps-column">
-          <h2>Steps</h2>
-
-          {steps.map((step, index) => (
-            <div key={index} className="step-feedback-row">
-
-              <div className="step-box">
-                <span
-                  className="delete-step"
+        {steps.map((step, index) => (
+          <div key={index} className="flex items-start gap-4">
+            {/* Step input */}
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Step {index + 1}</Label>
+                <button
                   onClick={() => deleteStep(index)}
+                  className="text-destructive hover:text-destructive/80 text-lg font-bold leading-none cursor-pointer"
                 >
-                  ×
-                </span>
-
-                <label><strong>Step {index + 1}</strong></label>
-
-                <input
-                  type="text"
-                  value={step}
-                  onChange={(e) => updateStep(index, e.target.value)}
-                  placeholder="Enter step..."
-                />
+                  &times;
+                </button>
               </div>
-
-              {/* FEEDBACK BOX */}
-              {feedback[index] && (
-                <div className="feedback-box">
-                  {feedback[index]}
-                </div>
-              )}
-
+              <Input
+                type="text"
+                value={step}
+                onChange={(e) => updateStep(index, e.target.value)}
+                placeholder="Enter step..."
+              />
             </div>
-          ))}
 
-          <button className="add-step-btn" onClick={addStep}>
-            + Add Step
-          </button>
-        </div>
+            {/* Feedback */}
+            {feedback[index] && (
+              <div className="w-2/5 bg-green-50 border-l-4 border-green-500 p-3 rounded-lg text-sm dark:bg-green-950/30 dark:border-green-600">
+                {feedback[index]}
+              </div>
+            )}
+          </div>
+        ))}
+
+        <Button variant="outline" onClick={addStep}>
+          + Add Step
+        </Button>
       </div>
 
-      {/* IMAGE UPLOAD CHANGE THIS IF YOU NEED*/}
-      <div>
-        <input 
+      {/* Image Upload */}
+      <div className="w-full mb-6">
+        <Label htmlFor="image-upload" className="mb-2 block">Upload Image (optional)</Label>
+        <Input
+          id="image-upload"
           type="file"
           accept="image/*, .pdf"
           onChange={handleImageUpload}
-          />
+        />
       </div>
 
-      {/* SUBMIT BUTTON */}
-      <div className="submit-container">
-        <button className="submit-btn" onClick={handleSubmit}>
-          Submit Steps
-        </button>
-      </div>
+      {/* Submit */}
+      <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleSubmit}>
+        Submit Steps
+      </Button>
 
-      {/* EVALUATION POPUP */}
-      {isEvaluating && (
-        <div className="eval-overlay">
-          <div className="eval-popup">
-            <div className="spinner"></div>
-            <p>Evaluating...</p>
+      {/* Evaluation Dialog */}
+      <Dialog open={isEvaluating} onOpenChange={() => {}}>
+        <DialogContent showCloseButton={false} className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Evaluating</DialogTitle>
+            <DialogDescription className="sr-only">Your steps are being evaluated</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary" />
+            <p className="text-muted-foreground">Evaluating...</p>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

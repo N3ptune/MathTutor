@@ -1,9 +1,10 @@
-// Course.jsx
 import { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase.js";
 import { AuthState } from "../authState.jsx";
-import "./Course.css";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 export default function Course() {
   const { courseId } = useParams();
@@ -18,7 +19,6 @@ export default function Course() {
 
     async function fetchCourseAndSections() {
       try {
-        // Fetch course info
         const { data: courseData, error: courseError } = await supabase
           .from("course")
           .select("name")
@@ -29,12 +29,11 @@ export default function Course() {
 
         setCourseName(courseData.name);
 
-        // Fetch sections for this course
         const { data: sectionData, error: sectionError } = await supabase
           .from("section")
           .select("*")
           .eq("courseId", courseId)
-          .order("sectionId", { ascending: true }); // optional ordering
+          .order("sectionId", { ascending: true });
 
         if (sectionError) throw sectionError;
 
@@ -48,23 +47,32 @@ export default function Course() {
   }, [supabaseUser, courseId]);
 
   return (
-    <div className="course-container">
-      <h1 className="course-title">{courseName}</h1>
-      <div className="sections-row">
+    <div className="max-w-6xl mx-auto px-6 py-10">
+      <Button variant="ghost" size="sm" className="mb-4" onClick={() => navigate("/dashboard")}>
+        <ArrowLeft className="size-4" />
+        Back to Dashboard
+      </Button>
+      <h1 className="text-3xl font-bold mb-8">{courseName}</h1>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {sections.length > 0 ? (
           sections.map((section) => (
-            <div key={section.sectionId} className="section-card">
-              <h3>{section.name}</h3>
-              <button
-                className="section-btn"
-                onClick={() => navigate(`/section/${section.sectionId}`)}
-              >
-                Go to Section
-              </button>
-            </div>
+            <Card key={section.sectionId}>
+              <CardHeader>
+                <CardTitle>{section.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  className="w-full"
+                  onClick={() => navigate(`/section/${section.sectionId}`)}
+                >
+                  Go to Section
+                </Button>
+              </CardContent>
+            </Card>
           ))
         ) : (
-          <p>No sections available for this course.</p>
+          <p className="col-span-full text-center text-muted-foreground">No sections available for this course.</p>
         )}
       </div>
     </div>
