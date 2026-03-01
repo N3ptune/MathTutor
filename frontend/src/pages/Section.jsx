@@ -10,6 +10,8 @@ export default function Section() {
   const { sectionId } = useParams();
   const { supabaseUser } = useContext(AuthState);
   const [problems, setProblems] = useState([]);
+  const [courseId, setCourseId] = useState(null); // store courseId
+  const [generating, setGenerating] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,14 +19,19 @@ export default function Section() {
 
     async function fetchProblems() {
       try {
+        // Fetch problems along with section info to get courseId
         const { data: problemsData, error } = await supabase
           .from("problem")
-          .select("*")
+          .select("*, section(courseId)")
           .eq("sectionId", sectionId);
 
         if (error) throw error;
 
         setProblems(problemsData);
+
+        if (problemsData?.length) {
+          setCourseId(problemsData[0].section.courseId);
+        }
       } catch (err) {
         console.error("Failed to fetch problems:", err);
       }
@@ -32,6 +39,37 @@ export default function Section() {
 
     fetchProblems();
   }, [sectionId, supabaseUser]);
+
+  const handleGenerateProblem = async () => {
+    if (!courseId) {
+      console.error("Cannot generate problem without courseId");
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
+      const res = await fetch(`${BACKEND_URL}/api/problem_generation/generate/`, {
+      method: "POST",
+      body: new URLSearchParams({
+        section_id: sectionId,
+        course_id: courseId,
+      }),
+    });
+
+      const data = await res.json();
+
+      if (res.ok && data.status === "success") {
+        setProblems((prev) => [...prev, data.problem]);
+      } else {
+        console.error("Failed to generate problem:", data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
@@ -42,24 +80,38 @@ export default function Section() {
       <h1 className="text-3xl font-bold mb-8">Section {sectionId}</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {problems.length > 0 ? (
-          problems.map((problem) => (
-            <Card key={problem.problemId}>
-              <CardHeader>
-                <CardTitle>{problem.title || `Problem ${problem.problemId}`}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  className="w-full"
-                  onClick={() => navigate(`/problem/${problem.problemId}`)}
-                >
-                  Go to Problem
-                </Button>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <p className="col-span-full text-center text-muted-foreground">No problems available for this section yet.</p>
+        {problems.map((problem) => (
+          <Card key={problem.problemId || problem.id}>
+            <CardHeader>
+              <CardTitle>{problem.title || `Problem ${problem.problemId || problem.id}`}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button
+                className="w-full"
+                onClick={() => navigate(`/problem/${problem.problemId || problem.id}`)}
+              >
+                Go to Problem
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+
+        {/* Generate Problem Card */}
+        {courseId && (
+          <Card key="generate-problem">
+            <CardHeader>
+              <CardTitle>Generate Problem</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button
+                className="w-full"
+                onClick={handleGenerateProblem}
+                disabled={generating}
+              >
+                {generating ? "Generating..." : "Generate Problem"}
+              </Button>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

@@ -3,6 +3,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import evalutations_router
+from app.routers import problem_generation_router
 
 app = FastAPI(title="MathTutor API", version="1.0.0")
 
@@ -17,6 +18,7 @@ app.add_middleware(
 )
 
 app.include_router(evalutations_router.router, prefix="/api")
+app.include_router(problem_generation_router.router, prefix="/api")
 
 
 @app.get("/")

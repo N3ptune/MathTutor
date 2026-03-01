@@ -35,3 +35,7 @@ def parse_ai_feedback(raw_text: str) -> list[str]:
 def parse_ai_course_structure(raw_text: str) -> dict:
     data = json.loads(raw_text)
     return data["course"]
+
+def parse_ai_section_structure(raw_text: str) -> dict:
+    data = json.loads(raw_text)
+    return data["section"]   
