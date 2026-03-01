@@ -48,7 +48,7 @@ export default function Section() {
 
     setGenerating(true);
     try {
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "";
       const res = await fetch(`${BACKEND_URL}/api/problem_generation/generate/`, {
       method: "POST",
       body: new URLSearchParams({
