@@ -5,8 +5,7 @@ import {
   loginWithGoogle,
   registerEmailPassword,
   loginEmailPassword,
-  isFirebaseAuthConfigured,
-} from "../firebase";
+} from "../supabase.js";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase.js";
 import { Button } from "@/components/ui/button";
@@ -39,16 +38,13 @@ export default function Home() {
   }, [user, navigate]);
 
   async function handleLoginEmail() {
-    if (!isFirebaseAuthConfigured) {
-      return;
-    }
     try {
-      const userCred = await loginEmailPassword(loginEmail, loginPassword);
+      const { user: authUser } = await loginEmailPassword(loginEmail, loginPassword);
 
       const { data, error } = await supabase
-        .from("users")
+        .from("user")
         .select("*")
-        .eq("firebase_uid", userCred.user.uid)
+        .eq("auth_uid", authUser.id)
         .single();
 
       if (error) throw error;
@@ -63,23 +59,20 @@ export default function Home() {
   }
 
   async function handleRegisterEmail() {
-    if (!isFirebaseAuthConfigured) {
-      return;
-    }
     if (regPassword !== regConfirm) {
       alert("Passwords do not match!");
       return;
     }
 
     try {
-      const userCred = await registerEmailPassword(regEmail, regPassword);
+      const { user: authUser } = await registerEmailPassword(regEmail, regPassword);
 
       const { data, error } = await supabase
-        .from("users")
+        .from("user")
         .insert([
           {
             email: regEmail,
-            firebase_uid: userCred.user.uid,
+            auth_uid: authUser.id,
           }
         ])
         .select()
@@ -97,25 +90,35 @@ export default function Home() {
   }
 
   async function handleGoogleLogin() {
-    if (!isFirebaseAuthConfigured) {
-      return;
-    }
     try {
-      const userCred = await loginWithGoogle();
+      const { data: authData } = await loginWithGoogle();
 
+      // Check if user already exists in our users table
       const { data, error } = await supabase
-        .from("users")
+        .from("user")
         .select("*")
-        .eq("firebase_uid", userCred.user.uid)
+        .eq("auth_uid", authData.user.id)
         .single();
 
       let supabaseData = data;
 
       if (!supabaseData) {
+        // Get user metadata from Google OAuth
+        const email = authData.user.email;
+        const fullName = authData.user.user_metadata?.full_name || "";
+        const nameParts = fullName.split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+
         const { data: newUser, error: insertError } = await supabase
-          .from("users")
+          .from("user")
           .insert([
-            { email: userCred.user.email, firebase_uid: userCred.user.uid }
+            {
+              email,
+              auth_uid: authData.user.id,
+              firstName,
+              lastName,
+            }
           ])
           .select()
           .single();
@@ -156,19 +159,13 @@ export default function Home() {
 
       {!user && (
         <div className="flex gap-4 z-10">
-          <Button size="lg" onClick={() => setShowLogin(true)} disabled={!isFirebaseAuthConfigured}>
+          <Button size="lg" onClick={() => setShowLogin(true)}>
             Sign In
           </Button>
-          <Button size="lg" variant="outline" onClick={() => setShowRegister(true)} disabled={!isFirebaseAuthConfigured}>
+          <Button size="lg" variant="outline" onClick={() => setShowRegister(true)}>
             Register
           </Button>
         </div>
-      )}
-
-      {!isFirebaseAuthConfigured && (
-        <p className="mt-4 text-destructive text-sm">
-          Firebase auth is not configured. Add VITE_FIREBASE_* values in frontend/.env to enable sign-in.
-        </p>
       )}
 
       {/* LOGIN DIALOG */}

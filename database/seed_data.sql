@@ -7,11 +7,13 @@ ON CONFLICT DO NOTHING;
 -- Insert sample courses
 INSERT INTO course (name, personId)
 VALUES
-('Algebra 1', 1)
+('Algebra 1', 1),
+('Geometry', 1),
+('Calculus 1', 1)
 ON CONFLICT DO NOTHING;
 
 -- Insert sample sections
-INSERT INTO section (name, classId)
+INSERT INTO section (name, courseId)
 VALUES
 ('Linear Equations', 1)
 ON CONFLICT DO NOTHING;

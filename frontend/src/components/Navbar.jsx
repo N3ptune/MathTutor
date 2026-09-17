@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
-import { auth } from "../firebase";
-import { signOut } from "firebase/auth";
+import { logout } from "../supabase";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -15,7 +14,7 @@ import {
 
 export default function Navbar() {
   function handleLogout() {
-    signOut(auth).catch((err) => console.error("Logout failed:", err));
+    logout().catch((err) => console.error("Logout failed:", err));
   }
 
   return (
@@ -41,6 +40,14 @@ export default function Navbar() {
                   className="text-foreground font-medium text-base hover:text-primary transition-colors py-2"
                 >
                   Dashboard
+                </Link>
+              </SheetClose>
+              <SheetClose asChild>
+                <Link
+                  to="/register"
+                  className="text-foreground font-medium text-base hover:text-primary transition-colors py-2"
+                >
+                  Register for Classes
                 </Link>
               </SheetClose>
             </nav>

@@ -1,26 +1,26 @@
 // authState.jsx
 import { createContext, useState, useEffect } from "react";
-import { auth } from "./firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { supabase } from "./supabase";
 
 export const AuthState = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(undefined);
-  const [supabaseUser, setSupabaseUser] = useState(null);
+  const [user, setUser] = useState(undefined); // Supabase auth user
+  const [supabaseUser, setSupabaseUser] = useState(null); // App user from your users table
 
   useEffect(() => {
-    if (!auth) {
-      setUser(null);
-      return;
-    }
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
 
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser ?? null);
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
       setSupabaseUser(null);
     });
 
-    return () => unsubscribe();
+    return () => subscription.unsubscribe();
   }, []);
 
   return (

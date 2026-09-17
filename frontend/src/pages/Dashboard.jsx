@@ -91,7 +91,12 @@ export default function Dashboard() {
 
       {/* Classes Section */}
       <section>
-        <h2 className="text-2xl font-semibold text-center mb-6">Your Classes</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold">Your Classes</h2>
+          <Button variant="outline" onClick={() => navigate("/register")}>
+            Register for a Class
+          </Button>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {courses.length > 0 ? (

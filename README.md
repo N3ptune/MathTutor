@@ -32,3 +32,11 @@ My main three takeaways from this were:
 3. All of the different tools and even just languages that a project uses and needs
 
 This project is interesting to me because of the relevance I feel it has to my time in higher level math courses, and how much I would've used this.
+
+
+To run, use # Backend (from /backend directory)
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+uvicorn app.main:app --reload
+
+# Frontend (from /frontend directory)
+npm run dev
