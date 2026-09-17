@@ -20,6 +20,9 @@ async function syncAppUser(authUser) {
   const fullName = authUser.user_metadata?.full_name || "";
   const [firstName, ...rest] = fullName.split(" ");
 
+  // Match existing rows by email, not auth_uid: pre-Supabase-Auth rows (from
+  // the earlier Firebase setup) already have this person's email but a stale
+  // auth_uid, so this links the row forward instead of creating a duplicate.
   const { data: created, error } = await supabase
     .from("users")
     .upsert(
@@ -29,7 +32,7 @@ async function syncAppUser(authUser) {
         firstName: firstName || "",
         lastName: rest.join(" "),
       }],
-      { onConflict: "auth_uid" }
+      { onConflict: "email" }
     )
     .select()
     .single();
