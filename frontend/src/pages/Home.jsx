@@ -7,7 +7,6 @@ import {
   loginEmailPassword,
 } from "../supabase.js";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../supabase.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +20,7 @@ import {
 
 export default function Home() {
   const navigate = useNavigate();
-  const { user, setSupabaseUser } = useContext(AuthState);
+  const { user } = useContext(AuthState);
 
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -39,19 +38,8 @@ export default function Home() {
 
   async function handleLoginEmail() {
     try {
-      const { user: authUser } = await loginEmailPassword(loginEmail, loginPassword);
-
-      const { data, error } = await supabase
-        .from("user")
-        .select("*")
-        .eq("auth_uid", authUser.id)
-        .single();
-
-      if (error) throw error;
-
-      setSupabaseUser(data);
+      await loginEmailPassword(loginEmail, loginPassword);
       setShowLogin(false);
-      navigate("/dashboard");
     } catch (err) {
       console.error(err);
       alert("Login failed: " + err.message);
@@ -65,24 +53,8 @@ export default function Home() {
     }
 
     try {
-      const { user: authUser } = await registerEmailPassword(regEmail, regPassword);
-
-      const { data, error } = await supabase
-        .from("user")
-        .insert([
-          {
-            email: regEmail,
-            auth_uid: authUser.id,
-          }
-        ])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setSupabaseUser(data);
+      await registerEmailPassword(regEmail, regPassword);
       setShowRegister(false);
-      navigate("/dashboard");
     } catch (err) {
       console.error(err);
       alert("Registration failed: " + err.message);
@@ -91,46 +63,9 @@ export default function Home() {
 
   async function handleGoogleLogin() {
     try {
-      const { data: authData } = await loginWithGoogle();
-
-      // Check if user already exists in our users table
-      const { data, error } = await supabase
-        .from("user")
-        .select("*")
-        .eq("auth_uid", authData.user.id)
-        .single();
-
-      let supabaseData = data;
-
-      if (!supabaseData) {
-        // Get user metadata from Google OAuth
-        const email = authData.user.email;
-        const fullName = authData.user.user_metadata?.full_name || "";
-        const nameParts = fullName.split(" ");
-        const firstName = nameParts[0] || "";
-        const lastName = nameParts.slice(1).join(" ") || "";
-
-        const { data: newUser, error: insertError } = await supabase
-          .from("user")
-          .insert([
-            {
-              email,
-              auth_uid: authData.user.id,
-              firstName,
-              lastName,
-            }
-          ])
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-        supabaseData = newUser;
-      }
-
-      setSupabaseUser(supabaseData);
+      await loginWithGoogle();
       setShowLogin(false);
       setShowRegister(false);
-      navigate("/dashboard");
     } catch (err) {
       console.error(err);
       alert("Google login failed: " + err.message);
