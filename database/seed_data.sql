@@ -1,5 +1,5 @@
 -- Insert sample users
-INSERT INTO "user" (firstName, lastName, email)
+INSERT INTO users (firstName, lastName, email)
 VALUES
 ('John', 'Doe', 'john@example.com')
 ON CONFLICT DO NOTHING;

@@ -3,10 +3,10 @@ DROP TABLE IF EXISTS user_course;
 DROP TABLE IF EXISTS section;
 DROP TABLE IF EXISTS course;
 DROP TABLE IF EXISTS problem;
-DROP TABLE IF EXISTS "user";
+DROP TABLE IF EXISTS users;
 
 -- Users table
-CREATE TABLE "user" (
+CREATE TABLE users (
     userId BIGSERIAL PRIMARY KEY,
     firstName TEXT DEFAULT '',
     lastName TEXT DEFAULT '',
@@ -18,7 +18,7 @@ CREATE TABLE "user" (
 CREATE TABLE course (
     courseId BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL,
-    personId BIGINT REFERENCES "user"(userId)
+    personId BIGINT REFERENCES users(userId)
 );
 
 -- Sections table
@@ -36,7 +36,7 @@ CREATE TABLE problem (
 
 -- Enrollments: which users are registered for which courses
 CREATE TABLE user_course (
-    userId BIGINT NOT NULL REFERENCES "user"(userId) ON DELETE CASCADE,
+    userId BIGINT NOT NULL REFERENCES users(userId) ON DELETE CASCADE,
     courseId BIGINT NOT NULL REFERENCES course(courseId) ON DELETE CASCADE,
     PRIMARY KEY (userId, courseId)
 );

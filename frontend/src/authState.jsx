@@ -4,13 +4,13 @@ import { supabase } from "./supabase";
 
 export const AuthState = createContext(null);
 
-// Looks up this person's row in our "user" table, creating one if this is
+// Looks up this person's row in our "users" table, creating one if this is
 // their first sign-in (e.g. via Google, where there's no separate register step).
 async function syncAppUser(authUser) {
   if (!authUser) return null;
 
   const { data: existing } = await supabase
-    .from("user")
+    .from("users")
     .select("*")
     .eq("auth_uid", authUser.id)
     .single();
@@ -21,7 +21,7 @@ async function syncAppUser(authUser) {
   const [firstName, ...rest] = fullName.split(" ");
 
   const { data: created, error } = await supabase
-    .from("user")
+    .from("users")
     .upsert(
       [{
         email: authUser.email,
