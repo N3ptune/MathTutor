@@ -7,7 +7,7 @@ python-dotenv==1.2.1
 sympy==1.14.0
 firebase-admin>=6.0.0
 supabase>=2.0.0
-pdf2image
+pymupdf
 pillow
 aiohttp
 pytest

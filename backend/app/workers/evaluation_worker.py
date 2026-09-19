@@ -14,15 +14,15 @@ LATEX_INSTRUCTIONS = (
 # of the frontend data package
 # Then it generates the prompt that it makes from the steps package
 # Then it takes the response grabbed from the api, and turns that into feedback per step, which it returns to the frontend to be thrown up
-async def evaluate_steps(problemId: int, steps: list[str], image_base64_list: list[str] | None = None):
+async def evaluate_steps(problemId: int, steps: list[str], image_base64_list: list[str] | None = None, document_text: str = ""):
     problem_text = await get_problem_text(problemId)
 
-    # If it's an image
-    if image_base64_list:
+    # If it's an uploaded solution (image, or PDF with extracted text)
+    if image_base64_list or document_text:
         prompt = f"""
 You are a helpful math tutor.
 
-A student submitted a handwritten solution image.
+A student submitted a written solution (an image and/or text extracted from their PDF).
 
 1. Extract the steps the student took in order, with the exact math that the user submitted.
 2. Evaluate each step.
@@ -48,6 +48,11 @@ Do not give more evaluations than steps, and do not give feedback for steps that
 Problem:
 {problem_text}
 """
+        if document_text:
+            prompt += f"""
+Text extracted from the student's document:
+{document_text}
+"""
 
         content = [
             {
@@ -56,10 +61,10 @@ Problem:
             },
         ]
 
-        for img_base64 in image_base64_list:
+        for img_base64 in image_base64_list or []:
             content.append({
                 "type": "input_image",
-                "image_url": f"data:image/png;base64,{img_base64}"
+                "image_url": f"data:image/jpeg;base64,{img_base64}"
             })
 
     # If it's text
