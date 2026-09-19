@@ -48,8 +48,8 @@ export default function Section() {
 
     setGenerating(true);
     try {
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "";
-      const res = await fetch(`${BACKEND_URL}/api/problem_generation/generate/`, {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/problem_generation/generate/`, {
       method: "POST",
       body: new URLSearchParams({
         section_id: sectionId,
