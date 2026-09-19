@@ -81,10 +81,6 @@ export default function ProblemInput() {
     setIsEvaluating(true);
 
     try {
-      console.log("Submitting steps:", steps);
-      console.log("Submitting problemId:", problemId);
-      console.log("Submitting imageFile:", imageFile);
-
       const formData = new FormData();
       formData.append("problemId", problemId);
       formData.append("steps", JSON.stringify(steps));
@@ -94,20 +90,25 @@ export default function ProblemInput() {
       }
 
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`${apiUrl}/api/evaluate/`, {
         method: "POST",
+        headers: { Authorization: `Bearer ${session?.access_token}` },
         body: formData,
       });
-
-      console.log("Response status:", response.status);
 
       let data;
       try {
         data = await response.json();
-        console.log("Response JSON:", data);
       } catch (jsonErr) {
         console.error("Failed to parse JSON:", jsonErr);
         data = {};
+      }
+
+      if (!response.ok) {
+        setFeedback([data.detail || "Something went wrong evaluating your steps."]);
+        setIsEvaluating(false);
+        return;
       }
 
       if (data.extracted_steps) {

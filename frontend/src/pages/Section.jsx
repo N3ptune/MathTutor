@@ -56,8 +56,10 @@ export default function Section() {
     setGenerating(true);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${apiUrl}/api/problem_generation/generate/`, {
       method: "POST",
+      headers: { Authorization: `Bearer ${session?.access_token}` },
       body: new URLSearchParams({
         section_id: sectionId,
         course_id: courseId,
