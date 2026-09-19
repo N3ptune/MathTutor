@@ -25,6 +25,26 @@ async def get_problem_text(problem_id: int) -> str:
     
     return data[0]["problem"]
 
+async def get_section_name(section_id: int) -> str:
+    url = f"{SUPABASE_URL}/rest/v1/section?sectionId=eq.{section_id}&select=name"
+
+    headers = {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": f"Bearer {SUPABASE_ANON_KEY}"
+    }
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, headers=headers)
+
+    if resp.status_code != 200:
+        raise Exception(f"Supabase error: {resp.text}")
+
+    data = resp.json()
+    if not data:
+        raise Exception("Section not found")
+
+    return data[0]["name"]
+
 async def push_course_to_supabase(course_data: dict):
     url = f"{SUPABASE_URL}/rest/v1/courses"
 
