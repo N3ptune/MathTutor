@@ -5,6 +5,7 @@ import { AuthState } from "../authState.jsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import MathText from "@/components/MathText";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -134,7 +135,7 @@ export default function ProblemInput() {
       {/* Problem Display */}
       <Card className="w-full mb-8">
         <CardContent>
-          <p className="text-lg">{problemText || "Loading problem..."}</p>
+          <MathText as="p" className="text-lg">{problemText || "Loading problem..."}</MathText>
         </CardContent>
       </Card>
 
@@ -161,12 +162,13 @@ export default function ProblemInput() {
                 onChange={(e) => updateStep(index, e.target.value)}
                 placeholder="Enter step..."
               />
+              {step && <MathText as="div" className="text-sm text-muted-foreground px-1">{step}</MathText>}
             </div>
 
             {/* Feedback */}
             {feedback[index] && (
               <div className="w-2/5 bg-green-50 border-l-4 border-green-500 p-3 rounded-lg text-sm dark:bg-green-950/30 dark:border-green-600">
-                {feedback[index]}
+                <MathText>{feedback[index]}</MathText>
               </div>
             )}
           </div>

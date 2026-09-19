@@ -3,6 +3,12 @@ from app.services.ai_service import send_ai_request, parse_ai_feedback
 
 import json
 
+# Appended to prompts so the frontend can render math with KaTeX
+LATEX_INSTRUCTIONS = (
+    "Write every mathematical expression in LaTeX wrapped in $...$ (for example $x^2 + \\\\frac{1}{2}$). "
+    "Because your reply is JSON, escape every backslash as a double backslash."
+)
+
 # Takes in the problemId from supabase, and the steps submitted from the front end
 # First snages the problem text from the database. Maybe this could be better implemented in the future by sending that as part
 # of the frontend data package
@@ -37,6 +43,8 @@ Respond ONLY with valid JSON in this format:
 
 Do not give more evaluations than steps, and do not give feedback for steps that don't exist. If you can't extract any steps, return an empty array for extracted_steps and give general feedback on the problem-solving approach in the feedback array.
 
+{LATEX_INSTRUCTIONS}
+
 Problem:
 {problem_text}
 """
@@ -67,6 +75,8 @@ Respond ONLY with JSON:
     "feedback 2"
   ]
 }}
+
+{LATEX_INSTRUCTIONS}
 
 Problem:
 {problem_text}

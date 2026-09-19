@@ -7,6 +7,7 @@ async def generate_problem_for_section(course_id: int, section_id: int) -> dict:
     prompt = f"""
 You are a math professor generating a single problem for the section titled "{section_name}".
 The problem must directly test the topic of that section and nothing else.
+Write every mathematical expression in LaTeX wrapped in $...$ (for example $x^2 + \\\\frac{{1}}{{2}}$). Because your reply is JSON, escape every backslash as a double backslash.
 Return only JSON in this format:
 {{
   "section": {{

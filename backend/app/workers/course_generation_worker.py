@@ -10,6 +10,8 @@ Include:
 - For each section, 3 problems (easy, medium, hard)
 - For each problem, include a description of what they are solving for, and the problem itself.parse_ai_course_structure
 
+Write every mathematical expression in LaTeX wrapped in $...$ (for example $x^2 + \\\\frac{{1}}{{2}}$). Because your reply is JSON, escape every backslash as a double backslash.
+
 Respond ONLY with valid JSON in this format:
 
 {{
