@@ -23,7 +23,13 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { varsIgnorePattern: '^([A-Z_]|motion$)' }],
+      // Context objects and shadcn variant helpers are exported alongside components on purpose
+      'react-refresh/only-export-components': 'warn',
     },
+  },
+  {
+    files: ['vite.config.js'],
+    languageOptions: { globals: globals.node },
   },
 ])

@@ -42,7 +42,8 @@ function toHtml(text) {
   return html + renderBare(text.slice(last));
 }
 
-export default function MathText({ children, className, as: Tag = "span" }) {
+export default function MathText({ children, className, as = "span" }) {
+  const Tag = as;
   const html = useMemo(() => toHtml(String(children ?? "")), [children]);
   return <Tag className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }

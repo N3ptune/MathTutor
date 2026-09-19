@@ -29,9 +29,16 @@ export default function Section() {
 
         setProblems(problemsData);
 
-        if (problemsData?.length) {
-          setCourseId(problemsData[0].section.courseId);
-        }
+        // Look the course up from the section itself so empty sections can still generate
+        const { data: sectionData, error: sectionError } = await supabase
+          .from("section")
+          .select("courseId")
+          .eq("sectionId", sectionId)
+          .single();
+
+        if (sectionError) throw sectionError;
+
+        setCourseId(sectionData.courseId);
       } catch (err) {
         console.error("Failed to fetch problems:", err);
       }
@@ -60,7 +67,13 @@ export default function Section() {
       const data = await res.json();
 
       if (res.ok && data.status === "success") {
-        setProblems((prev) => [...prev, data.problem]);
+        // The API response has no DB id, so reload the saved rows to get real problem ids
+        const { data: refreshed, error } = await supabase
+          .from("problem")
+          .select("*")
+          .eq("sectionId", sectionId);
+        if (error) throw error;
+        setProblems(refreshed);
       } else {
         console.error("Failed to generate problem:", data);
       }
