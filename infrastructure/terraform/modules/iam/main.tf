@@ -107,6 +107,7 @@ resource "aws_iam_role_policy" "backend_deploy" {
         Effect = "Allow"
         Action = [
           "apprunner:UpdateService",
+          "apprunner:StartDeployment",
           "apprunner:DescribeService",
         ]
         Resource = [

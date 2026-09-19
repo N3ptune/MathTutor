@@ -46,20 +46,10 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
+      # start-deployment pulls the new :latest image and keeps the service's
+      # existing config. update-service with the same image tag can be a no-op,
+      # and passing --source-configuration replaces the whole block, which drops
+      # the runtime env vars and SSM secrets Terraform set (ALLOWED_ORIGINS, keys).
       - name: Deploy to App Runner
         run: |
-          aws apprunner update-service \
-            --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
-            --source-configuration '{
-              "ImageRepository": {
-                "ImageIdentifier": "${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:latest",
-                "ImageRepositoryType": "ECR",
-                "ImageConfiguration": {
-                  "Port": "8000"
-                }
-              },
-              "AuthenticationConfiguration": {
-                "AccessRoleArn": "${{ vars.APPRUNNER_ECR_ROLE_ARN }}"
-              },
-              "AutoDeploymentsEnabled": false
-            }'
+          aws apprunner start-deployment --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}"
