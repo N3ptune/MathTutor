@@ -44,4 +44,6 @@ async def require_user(authorization: str | None = Header(default=None)) -> dict
 
     user = resp.json()
     _check_rate_limit(user["id"])
+    # Kept so Supabase requests can run as this user and be checked by RLS
+    user["access_token"] = token
     return user

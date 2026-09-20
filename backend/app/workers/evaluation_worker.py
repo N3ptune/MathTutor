@@ -21,8 +21,8 @@ LATEX_INSTRUCTIONS = (
 # of the frontend data package
 # Then it generates the prompt that it makes from the steps package
 # Then it takes the response grabbed from the api, and turns that into feedback per step, which it returns to the frontend to be thrown up
-async def evaluate_steps(problemId: int, steps: list[str], image_base64_list: list[str] | None = None, document_text: str = ""):
-    problem_text = await get_problem_text(problemId)
+async def evaluate_steps(problemId: int, steps: list[str], image_base64_list: list[str] | None = None, document_text: str = "", access_token: str = ""):
+    problem_text = await get_problem_text(problemId, access_token)
 
     # If it's an uploaded solution (image, or PDF with extracted text)
     if image_base64_list or document_text:

@@ -1,17 +1,21 @@
 from app.config import SUPABASE_URL, SUPABASE_ANON_KEY
 import httpx
 
+# Requests to Supabase carry the signed-in user's token, so row-level security applies to them
+def _user_headers(access_token: str) -> dict:
+    return {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": f"Bearer {access_token}",
+    }
+
 # Queries supabase to find the problem text
 # This definitely seems like something that would be easier to just send from front end
 # Although I guess backend will eventually handle all supabase communication
 # If this lasts long enough to pay for IPv4 tier
-async def get_problem_text(problem_id: int) -> str:
+async def get_problem_text(problem_id: int, access_token: str) -> str:
     url = f"{SUPABASE_URL}/rest/v1/problem?problemId=eq.{problem_id}&select=problem"
 
-    headers = {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": f"Bearer {SUPABASE_ANON_KEY}"
-    }
+    headers = _user_headers(access_token)
 
     async with httpx.AsyncClient() as client:
         resp = await client.get(url, headers=headers)
@@ -25,13 +29,10 @@ async def get_problem_text(problem_id: int) -> str:
     
     return data[0]["problem"]
 
-async def get_section_name(section_id: int) -> str:
+async def get_section_name(section_id: int, access_token: str) -> str:
     url = f"{SUPABASE_URL}/rest/v1/section?sectionId=eq.{section_id}&select=name"
 
-    headers = {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": f"Bearer {SUPABASE_ANON_KEY}"
-    }
+    headers = _user_headers(access_token)
 
     async with httpx.AsyncClient() as client:
         resp = await client.get(url, headers=headers)
@@ -76,14 +77,10 @@ async def push_course_to_supabase(course_data: dict):
                 problem_resp = await client.post(f"{url}/problems", headers=headers, json=problem_data)
                 problem_resp.raise_for_status()
 
-async def push_section_problems_to_supabase(course_id: int, section_id: int, section_data: dict):
+async def push_section_problems_to_supabase(course_id: int, section_id: int, section_data: dict, access_token: str):
     url = f"{SUPABASE_URL}/rest/v1/problem"
 
-    headers = {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
-        "Content-Type": "application/json"
-    }
+    headers = {**_user_headers(access_token), "Content-Type": "application/json"}
 
     async with httpx.AsyncClient() as client:
         for problem in section_data["problems"]:

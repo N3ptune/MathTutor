@@ -1,8 +1,8 @@
 from app.services.ai_service import send_ai_request, parse_ai_section_structure
 from app.services.supabase_service import get_section_name, push_section_problems_to_supabase
 
-async def generate_problem_for_section(course_id: int, section_id: int) -> dict:
-    section_name = await get_section_name(section_id)
+async def generate_problem_for_section(course_id: int, section_id: int, access_token: str) -> dict:
+    section_name = await get_section_name(section_id, access_token)
 
     prompt = f"""
 You are a math professor generating a single problem for the section titled "{section_name}".
@@ -24,6 +24,6 @@ Return only JSON in this format:
     section_data = parse_ai_section_structure(raw_response)
 
     # Push to Supabase
-    await push_section_problems_to_supabase(course_id, section_id, section_data)
+    await push_section_problems_to_supabase(course_id, section_id, section_data, access_token)
 
     return section_data["problems"][0]

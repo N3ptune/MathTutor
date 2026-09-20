@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, File, UploadFile, Form
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
+from app.auth import require_user
 from typing import Optional
 from pydantic import BaseModel
 import json
@@ -21,7 +22,7 @@ class EvaluateResponse(BaseModel):
 # Takes in the evaluation request
 # Throws back the parsed and complete feedback
 @router.post("/", response_model=EvaluateResponse)
-async def evaluate(problemId: int = Form(...), steps: str = Form(...), image: Optional[UploadFile] = File(None)):
+async def evaluate(problemId: int = Form(...), steps: str = Form(...), image: Optional[UploadFile] = File(None), user: dict = Depends(require_user)):
     try:
         try:
             parsed_steps = json.loads(steps)
@@ -45,7 +46,7 @@ async def evaluate(problemId: int = Form(...), steps: str = Form(...), image: Op
             image_base64_list = upload.images_base64
             document_text = upload.text
 
-        result = await evaluate_steps(problemId, parsed_steps, image_base64_list, document_text)
+        result = await evaluate_steps(problemId, parsed_steps, image_base64_list, document_text, user["access_token"])
 
         return result
     
