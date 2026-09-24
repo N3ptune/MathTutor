@@ -17,6 +17,9 @@ export default function Section() {
   const [proficiency, setProficiency] = useState(null);
   const navigate = useNavigate();
 
+  const courseProblems = problems.filter((p) => p.source !== "user");
+  const personalProblems = problems.filter((p) => p.source === "user");
+
   useEffect(() => {
     if (!supabaseUser) return;
 
@@ -112,29 +115,27 @@ export default function Section() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {problems.map((problem) => (
-          <Card key={problem.problemId || problem.id}>
-            <CardHeader>
-              <CardTitle>{problem.title || `Problem ${problem.problemId || problem.id}`}</CardTitle>
-              {problem.source === "user" && (
-                <span className="text-xs text-muted-foreground">Your practice problem</span>
-              )}
-            </CardHeader>
-            <CardContent>
-              <Button
-                className="w-full"
-                onClick={() => navigate(`/problem/${problem.problemId || problem.id}`)}
-              >
-                Go to Problem
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Course problems: the shared catalog, visible to everyone in the class */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-4">Course Problems</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {courseProblems.map((problem) => (
+            <Card key={problem.problemId || problem.id}>
+              <CardHeader>
+                <CardTitle>{problem.title || `Problem ${problem.problemId || problem.id}`}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  className="w-full"
+                  onClick={() => navigate(`/problem/${problem.problemId || problem.id}`)}
+                >
+                  Go to Problem
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
 
-        {/* Generate Problem Cards */}
-        {courseId && (
-          <>
+          {courseId && (
             <Card key="generate-problem">
               <CardHeader>
                 <CardTitle>Generate Problem</CardTitle>
@@ -149,7 +150,31 @@ export default function Section() {
                 </Button>
               </CardContent>
             </Card>
+          )}
+        </div>
+      </section>
 
+      {/* Generated problems: only the ones this student has generated for their own practice */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4">Your Generated Problems</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {personalProblems.map((problem) => (
+            <Card key={problem.problemId || problem.id}>
+              <CardHeader>
+                <CardTitle>{problem.title || `Problem ${problem.problemId || problem.id}`}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  className="w-full"
+                  onClick={() => navigate(`/problem/${problem.problemId || problem.id}`)}
+                >
+                  Go to Problem
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+
+          {courseId && (
             <Card key="generate-personal-problem">
               <CardHeader>
                 <CardTitle>Practice on Your Own</CardTitle>
@@ -165,9 +190,9 @@ export default function Section() {
                 </Button>
               </CardContent>
             </Card>
-          </>
-        )}
-      </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

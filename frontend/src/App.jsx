@@ -7,6 +7,7 @@ import RequireAuth from "./components/RequireAuth.jsx"
 import Course from './pages/Course.jsx'
 import Section from './pages/Section.jsx'
 import ProficiencyExam from './pages/ProficiencyExam.jsx'
+import Proficiency from './pages/Proficiency.jsx'
 import RegisterClasses from './pages/RegisterClasses.jsx'
 
 function AppContent() {
@@ -26,6 +27,9 @@ function AppContent() {
         }/>
         <Route path="/dashboard" element={
           <RequireAuth><Dashboard /></RequireAuth>
+        }/>
+        <Route path="/proficiency" element={
+          <RequireAuth><Proficiency /></RequireAuth>
         }/>
         <Route path="/course/:courseId" element={<RequireAuth><Course /></RequireAuth>} />
         <Route path="/section/:sectionId" element={<RequireAuth><Section /></RequireAuth>} />

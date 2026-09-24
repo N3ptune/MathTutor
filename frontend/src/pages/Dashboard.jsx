@@ -10,7 +10,7 @@ import ProficiencyRing from "@/components/ProficiencyRing";
 export default function Dashboard() {
   const { supabaseUser } = useContext(AuthState);
   const [courses, setCourses] = useState([]);
-  const [overallProficiency, setOverallProficiency] = useState(null);
+  const [courseProficiencies, setCourseProficiencies] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,7 +45,9 @@ export default function Dashboard() {
       }
     }
 
-    async function fetchOverallProficiency() {
+    // One ring per enrolled class: the average across all of that class's sections
+    // (sections you haven't touched yet count as 0, so this reads as "% of the class mastered").
+    async function fetchCourseProficiencies() {
       try {
         const { data: enrollmentData } = await supabase
           .from("user_course")
@@ -54,41 +56,50 @@ export default function Dashboard() {
 
         const courseIds = (enrollmentData || []).map((e) => e.courseId);
         if (courseIds.length === 0) {
-          setOverallProficiency(null);
+          setCourseProficiencies([]);
           return;
         }
+
+        const { data: courseData } = await supabase
+          .from("course")
+          .select("courseId, name")
+          .in("courseId", courseIds);
 
         const { data: sectionData } = await supabase
           .from("section")
-          .select("sectionId")
+          .select("sectionId, courseId")
           .in("courseId", courseIds);
 
         const sectionIds = (sectionData || []).map((s) => s.sectionId);
-        if (sectionIds.length === 0) {
-          setOverallProficiency(null);
-          return;
+
+        let profRows = [];
+        if (sectionIds.length > 0) {
+          const { data: profData } = await supabase
+            .from("proficiency")
+            .select("sectionId, rating")
+            .eq("userId", supabaseUser.userId)
+            .in("sectionId", sectionIds);
+          profRows = profData || [];
         }
 
-        const { data: profData } = await supabase
-          .from("proficiency")
-          .select("rating")
-          .eq("userId", supabaseUser.userId)
-          .in("sectionId", sectionIds);
+        const ratingBySection = Object.fromEntries(profRows.map((p) => [p.sectionId, p.rating]));
 
-        if (!profData || profData.length === 0) {
-          setOverallProficiency(0);
-          return;
-        }
+        const results = (courseData || []).map((course) => {
+          const sections = (sectionData || []).filter((s) => s.courseId === course.courseId);
+          const rating = sections.length
+            ? sections.reduce((sum, s) => sum + (ratingBySection[s.sectionId] || 0), 0) / sections.length
+            : 0;
+          return { courseId: course.courseId, name: course.name, rating };
+        });
 
-        const avg = profData.reduce((sum, p) => sum + p.rating, 0) / profData.length;
-        setOverallProficiency(avg);
+        setCourseProficiencies(results);
       } catch (err) {
-        console.error("Failed to fetch overall proficiency:", err);
+        console.error("Failed to fetch course proficiencies:", err);
       }
     }
 
     fetchCourses();
-    fetchOverallProficiency();
+    fetchCourseProficiencies();
   }, [supabaseUser]);
 
   return (
@@ -106,14 +117,29 @@ export default function Dashboard() {
         <h2 className="text-2xl font-semibold text-center mb-6">Your Progress</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between gap-4">
               <CardTitle>Proficiency Chart</CardTitle>
+              {courseProficiencies.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => navigate("/proficiency")}>
+                  View Details
+                </Button>
+              )}
             </CardHeader>
-            <CardContent className="flex items-center justify-center h-32">
-              {overallProficiency === null ? (
-                <p className="text-muted-foreground">Enroll in a class to start tracking proficiency.</p>
+            <CardContent className="flex items-center justify-center min-h-32 py-4">
+              {courseProficiencies.length === 0 ? (
+                <p className="text-muted-foreground text-center">Enroll in a class to start tracking proficiency.</p>
               ) : (
-                <ProficiencyRing rating={overallProficiency} label="Overall" />
+                <div className="flex flex-wrap justify-center gap-6">
+                  {courseProficiencies.map((cp) => (
+                    <button
+                      key={cp.courseId}
+                      onClick={() => navigate("/proficiency")}
+                      className="cursor-pointer"
+                    >
+                      <ProficiencyRing rating={cp.rating} size={64} strokeWidth={6} label={cp.name} />
+                    </button>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
