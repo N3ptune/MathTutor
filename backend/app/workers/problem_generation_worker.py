@@ -23,7 +23,7 @@ Return only JSON in this format:
     raw_response = await send_ai_request(messages)
     section_data = parse_ai_section_structure(raw_response)
 
-    # Push to Supabase
-    await push_section_problems_to_supabase(course_id, section_id, section_data, access_token)
+    # Push to Supabase and return the inserted row (has the real problemId)
+    inserted = await push_section_problems_to_supabase(course_id, section_id, section_data, access_token)
 
-    return section_data["problems"][0]
+    return inserted[0]

@@ -77,11 +77,12 @@ async def push_course_to_supabase(course_data: dict):
                 problem_resp = await client.post(f"{url}/problems", headers=headers, json=problem_data)
                 problem_resp.raise_for_status()
 
-async def push_section_problems_to_supabase(course_id: int, section_id: int, section_data: dict, access_token: str):
+async def push_section_problems_to_supabase(course_id: int, section_id: int, section_data: dict, access_token: str) -> list[dict]:
     url = f"{SUPABASE_URL}/rest/v1/problem"
 
-    headers = {**_user_headers(access_token), "Content-Type": "application/json"}
+    headers = {**_user_headers(access_token), "Content-Type": "application/json", "Prefer": "return=representation"}
 
+    inserted = []
     async with httpx.AsyncClient() as client:
         for problem in section_data["problems"]:
             problem_payload = {
@@ -90,3 +91,6 @@ async def push_section_problems_to_supabase(course_id: int, section_id: int, sec
             }
             resp = await client.post(url, headers=headers, json=problem_payload)
             resp.raise_for_status()
+            inserted.append(resp.json()[0])
+
+    return inserted

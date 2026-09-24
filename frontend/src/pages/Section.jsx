@@ -69,13 +69,7 @@ export default function Section() {
       const data = await res.json();
 
       if (res.ok && data.status === "success") {
-        // The API response has no DB id, so reload the saved rows to get real problem ids
-        const { data: refreshed, error } = await supabase
-          .from("problem")
-          .select("*")
-          .eq("sectionId", sectionId);
-        if (error) throw error;
-        setProblems(refreshed);
+        setProblems((prev) => [...prev, data.problem]);
       } else {
         console.error("Failed to generate problem:", data);
       }
