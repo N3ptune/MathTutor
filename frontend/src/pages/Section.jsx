@@ -13,7 +13,7 @@ export default function Section() {
   const { supabaseUser } = useContext(AuthState);
   const [problems, setProblems] = useState([]);
   const [courseId, setCourseId] = useState(null); // store courseId
-  const [generating, setGenerating] = useState(false);
+  const [sectionName, setSectionName] = useState("");
   const [generatingPersonal, setGeneratingPersonal] = useState(false);
   const [proficiency, setProficiency] = useState(null);
   const navigate = useNavigate();
@@ -39,13 +39,14 @@ export default function Section() {
         // Look the course up from the section itself so empty sections can still generate
         const { data: sectionData, error: sectionError } = await supabase
           .from("section")
-          .select("courseId")
+          .select("name, courseId")
           .eq("sectionId", sectionId)
           .single();
 
         if (sectionError) throw sectionError;
 
         setCourseId(sectionData.courseId);
+        setSectionName(sectionData.name);
 
         const { data: profData, error: profError } = await supabase
           .from("proficiency")
@@ -65,13 +66,13 @@ export default function Section() {
     fetchProblems();
   }, [sectionId, supabaseUser]);
 
-  const generateProblem = async (personal) => {
+  const generatePersonalProblem = async () => {
     if (!courseId) {
       console.error("Cannot generate problem without courseId");
       return;
     }
 
-    personal ? setGeneratingPersonal(true) : setGenerating(true);
+    setGeneratingPersonal(true);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
       const { data: { session } } = await supabase.auth.getSession();
@@ -81,7 +82,7 @@ export default function Section() {
       body: new URLSearchParams({
         section_id: sectionId,
         course_id: courseId,
-        personal: personal ? "true" : "false",
+        personal: "true",
       }),
     });
 
@@ -95,7 +96,7 @@ export default function Section() {
     } catch (err) {
       console.error(err);
     } finally {
-      personal ? setGeneratingPersonal(false) : setGenerating(false);
+      setGeneratingPersonal(false);
     }
   };
 
@@ -107,7 +108,7 @@ export default function Section() {
       </Button>
 
       <div className="flex items-center justify-between mb-8 gap-6">
-        <h1 className="text-3xl font-bold">Section {sectionId}</h1>
+        <h1 className="text-3xl font-bold">{sectionName || `Section ${sectionId}`}</h1>
         <div className="flex items-center gap-4">
           <ProficiencyRing rating={proficiency?.rating || 0} examPassed={proficiency?.examPassed || false} />
           <Button variant="outline" onClick={() => navigate(`/section/${sectionId}/exam`)}>
@@ -138,12 +139,6 @@ export default function Section() {
             </Card>
           ))}
         </div>
-
-        {courseId && (
-          <Button variant="outline" onClick={() => generateProblem(false)} disabled={generating}>
-            {generating ? "Generating..." : "+ Generate Problem"}
-          </Button>
-        )}
       </section>
 
       {/* Generated problems: only the ones this student has generated for their own practice */}
@@ -170,7 +165,7 @@ export default function Section() {
         </div>
 
         {courseId && (
-          <Button variant="outline" onClick={() => generateProblem(true)} disabled={generatingPersonal}>
+          <Button variant="outline" onClick={generatePersonalProblem} disabled={generatingPersonal}>
             {generatingPersonal ? "Generating..." : "+ Generate Personal Problem"}
           </Button>
         )}
