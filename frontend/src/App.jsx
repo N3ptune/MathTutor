@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar.jsx"
 import RequireAuth from "./components/RequireAuth.jsx"
 import Course from './pages/Course.jsx'
 import Section from './pages/Section.jsx'
+import ProficiencyExam from './pages/ProficiencyExam.jsx'
 import RegisterClasses from './pages/RegisterClasses.jsx'
 
 function AppContent() {
@@ -28,6 +29,7 @@ function AppContent() {
         }/>
         <Route path="/course/:courseId" element={<RequireAuth><Course /></RequireAuth>} />
         <Route path="/section/:sectionId" element={<RequireAuth><Section /></RequireAuth>} />
+        <Route path="/section/:sectionId/exam" element={<RequireAuth><ProficiencyExam /></RequireAuth>} />
         <Route path="/register" element={<RequireAuth><RegisterClasses /></RequireAuth>} />
       </Routes>
     </div>

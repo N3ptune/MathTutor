@@ -5,6 +5,7 @@ import { AuthState } from "../authState";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import ProficiencyRing from "@/components/ProficiencyRing";
 
 export default function Section() {
   const { sectionId } = useParams();
@@ -12,6 +13,8 @@ export default function Section() {
   const [problems, setProblems] = useState([]);
   const [courseId, setCourseId] = useState(null); // store courseId
   const [generating, setGenerating] = useState(false);
+  const [generatingPersonal, setGeneratingPersonal] = useState(false);
+  const [proficiency, setProficiency] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,6 +42,17 @@ export default function Section() {
         if (sectionError) throw sectionError;
 
         setCourseId(sectionData.courseId);
+
+        const { data: profData, error: profError } = await supabase
+          .from("proficiency")
+          .select("rating, examPassed")
+          .eq("userId", supabaseUser.userId)
+          .eq("sectionId", sectionId)
+          .maybeSingle();
+
+        if (profError) throw profError;
+
+        setProficiency(profData);
       } catch (err) {
         console.error("Failed to fetch problems:", err);
       }
@@ -47,13 +61,13 @@ export default function Section() {
     fetchProblems();
   }, [sectionId, supabaseUser]);
 
-  const handleGenerateProblem = async () => {
+  const generateProblem = async (personal) => {
     if (!courseId) {
       console.error("Cannot generate problem without courseId");
       return;
     }
 
-    setGenerating(true);
+    personal ? setGeneratingPersonal(true) : setGenerating(true);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
       const { data: { session } } = await supabase.auth.getSession();
@@ -63,6 +77,7 @@ export default function Section() {
       body: new URLSearchParams({
         section_id: sectionId,
         course_id: courseId,
+        personal: personal ? "true" : "false",
       }),
     });
 
@@ -76,7 +91,7 @@ export default function Section() {
     } catch (err) {
       console.error(err);
     } finally {
-      setGenerating(false);
+      personal ? setGeneratingPersonal(false) : setGenerating(false);
     }
   };
 
@@ -86,13 +101,25 @@ export default function Section() {
         <ArrowLeft className="size-4" />
         Back
       </Button>
-      <h1 className="text-3xl font-bold mb-8">Section {sectionId}</h1>
+
+      <div className="flex items-center justify-between mb-8 gap-6">
+        <h1 className="text-3xl font-bold">Section {sectionId}</h1>
+        <div className="flex items-center gap-4">
+          <ProficiencyRing rating={proficiency?.rating || 0} examPassed={proficiency?.examPassed || false} />
+          <Button variant="outline" onClick={() => navigate(`/section/${sectionId}/exam`)}>
+            Take Proficiency Exam
+          </Button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {problems.map((problem) => (
           <Card key={problem.problemId || problem.id}>
             <CardHeader>
               <CardTitle>{problem.title || `Problem ${problem.problemId || problem.id}`}</CardTitle>
+              {problem.source === "user" && (
+                <span className="text-xs text-muted-foreground">Your practice problem</span>
+              )}
             </CardHeader>
             <CardContent>
               <Button
@@ -105,22 +132,40 @@ export default function Section() {
           </Card>
         ))}
 
-        {/* Generate Problem Card */}
+        {/* Generate Problem Cards */}
         {courseId && (
-          <Card key="generate-problem">
-            <CardHeader>
-              <CardTitle>Generate Problem</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button
-                className="w-full"
-                onClick={handleGenerateProblem}
-                disabled={generating}
-              >
-                {generating ? "Generating..." : "Generate Problem"}
-              </Button>
-            </CardContent>
-          </Card>
+          <>
+            <Card key="generate-problem">
+              <CardHeader>
+                <CardTitle>Generate Problem</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  className="w-full"
+                  onClick={() => generateProblem(false)}
+                  disabled={generating}
+                >
+                  {generating ? "Generating..." : "Generate Problem"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card key="generate-personal-problem">
+              <CardHeader>
+                <CardTitle>Practice on Your Own</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => generateProblem(true)}
+                  disabled={generatingPersonal}
+                >
+                  {generatingPersonal ? "Generating..." : "Generate Personal Problem"}
+                </Button>
+              </CardContent>
+            </Card>
+          </>
         )}
       </div>
     </div>

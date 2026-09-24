@@ -5,6 +5,7 @@ import { AuthState } from "../authState.jsx";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import ProficiencyRing from "@/components/ProficiencyRing";
 
 export default function Course() {
   const { courseId } = useParams();
@@ -13,6 +14,7 @@ export default function Course() {
 
   const [sections, setSections] = useState([]);
   const [courseName, setCourseName] = useState("");
+  const [proficiencyBySection, setProficiencyBySection] = useState({});
 
   useEffect(() => {
     if (!supabaseUser) return;
@@ -38,6 +40,23 @@ export default function Course() {
         if (sectionError) throw sectionError;
 
         setSections(sectionData);
+
+        const sectionIds = (sectionData || []).map((s) => s.sectionId);
+        if (sectionIds.length > 0) {
+          const { data: profData, error: profError } = await supabase
+            .from("proficiency")
+            .select("sectionId, rating, examPassed")
+            .eq("userId", supabaseUser.userId)
+            .in("sectionId", sectionIds);
+
+          if (profError) throw profError;
+
+          const bySection = {};
+          for (const row of profData || []) {
+            bySection[row.sectionId] = row;
+          }
+          setProficiencyBySection(bySection);
+        }
       } catch (err) {
         console.error("Failed to fetch course or sections:", err);
       }
@@ -56,21 +75,30 @@ export default function Course() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {sections.length > 0 ? (
-          sections.map((section) => (
-            <Card key={section.sectionId}>
-              <CardHeader>
-                <CardTitle>{section.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  className="w-full"
-                  onClick={() => navigate(`/section/${section.sectionId}`)}
-                >
-                  Go to Section
-                </Button>
-              </CardContent>
-            </Card>
-          ))
+          sections.map((section) => {
+            const proficiency = proficiencyBySection[section.sectionId];
+            return (
+              <Card key={section.sectionId}>
+                <CardHeader className="flex flex-row items-center justify-between gap-4">
+                  <CardTitle>{section.name}</CardTitle>
+                  <ProficiencyRing
+                    rating={proficiency?.rating || 0}
+                    examPassed={proficiency?.examPassed || false}
+                    size={56}
+                    strokeWidth={6}
+                  />
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    className="w-full"
+                    onClick={() => navigate(`/section/${section.sectionId}`)}
+                  >
+                    Go to Section
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })
         ) : (
           <p className="col-span-full text-center text-muted-foreground">No sections available for this course.</p>
         )}

@@ -5,10 +5,12 @@ import { AuthState } from "../authState.jsx";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import ProficiencyRing from "@/components/ProficiencyRing";
 
 export default function Dashboard() {
   const { supabaseUser } = useContext(AuthState);
   const [courses, setCourses] = useState([]);
+  const [overallProficiency, setOverallProficiency] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,7 +45,50 @@ export default function Dashboard() {
       }
     }
 
+    async function fetchOverallProficiency() {
+      try {
+        const { data: enrollmentData } = await supabase
+          .from("user_course")
+          .select("courseId")
+          .eq("userId", supabaseUser.userId);
+
+        const courseIds = (enrollmentData || []).map((e) => e.courseId);
+        if (courseIds.length === 0) {
+          setOverallProficiency(null);
+          return;
+        }
+
+        const { data: sectionData } = await supabase
+          .from("section")
+          .select("sectionId")
+          .in("courseId", courseIds);
+
+        const sectionIds = (sectionData || []).map((s) => s.sectionId);
+        if (sectionIds.length === 0) {
+          setOverallProficiency(null);
+          return;
+        }
+
+        const { data: profData } = await supabase
+          .from("proficiency")
+          .select("rating")
+          .eq("userId", supabaseUser.userId)
+          .in("sectionId", sectionIds);
+
+        if (!profData || profData.length === 0) {
+          setOverallProficiency(0);
+          return;
+        }
+
+        const avg = profData.reduce((sum, p) => sum + p.rating, 0) / profData.length;
+        setOverallProficiency(avg);
+      } catch (err) {
+        console.error("Failed to fetch overall proficiency:", err);
+      }
+    }
+
     fetchCourses();
+    fetchOverallProficiency();
   }, [supabaseUser]);
 
   return (
@@ -64,8 +109,12 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle>Proficiency Chart</CardTitle>
             </CardHeader>
-            <CardContent className="flex items-center justify-center h-32 text-muted-foreground">
-              Coming soon
+            <CardContent className="flex items-center justify-center h-32">
+              {overallProficiency === null ? (
+                <p className="text-muted-foreground">Enroll in a class to start tracking proficiency.</p>
+              ) : (
+                <ProficiencyRing rating={overallProficiency} label="Overall" />
+              )}
             </CardContent>
           </Card>
           <Card>

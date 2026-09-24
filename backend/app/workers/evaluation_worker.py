@@ -35,6 +35,10 @@ A student submitted a written solution (an image and/or text extracted from thei
 2. Evaluate each step.
 3. Do NOT give away the final answer.
 
+4. Rate how strongly this attempt demonstrates mastery of the section's topic, as an integer
+   from 0 to 100 (proficiency_rating), and say whether the final answer and overall approach
+   were fully correct (all_correct).
+
 Respond ONLY with valid JSON in this format:
 
 {{
@@ -45,7 +49,9 @@ Respond ONLY with valid JSON in this format:
   "feedback": [
     "feedback for step 1",
     "feedback for step 2"
-  ]
+  ],
+  "proficiency_rating": 0,
+  "all_correct": false
 }}
 
 Do not give more evaluations than steps, and do not give feedback for steps that don't exist. If you can't extract any steps, return an empty array for extracted_steps and give general feedback on the problem-solving approach in the feedback array.
@@ -80,14 +86,18 @@ Problem:
     else:
         prompt = f"""
 You are a helpful math tutor.
-Evaluate each step.
+Evaluate each step. Also rate how strongly this attempt demonstrates mastery of the section's
+topic, as an integer from 0 to 100 (proficiency_rating), and say whether the final answer and
+overall approach were fully correct (all_correct).
 Respond ONLY with JSON:
 
 {{
   "feedback": [
     "feedback 1",
     "feedback 2"
-  ]
+  ],
+  "proficiency_rating": 0,
+  "all_correct": false
 }}
 
 {LATEX_INSTRUCTIONS}

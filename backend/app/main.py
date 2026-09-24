@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import evalutations_router
 from app.routers import problem_generation_router
+from app.routers import proficiency_router
 from app.auth import require_user
 
 app = FastAPI(title="MathTutor API", version="1.0.0")
@@ -24,6 +25,7 @@ app.add_middleware(
 # Everything under /api spends OpenAI credits, so it requires a signed-in user
 app.include_router(evalutations_router.router, prefix="/api", dependencies=[Depends(require_user)])
 app.include_router(problem_generation_router.router, prefix="/api", dependencies=[Depends(require_user)])
+app.include_router(proficiency_router.router, prefix="/api", dependencies=[Depends(require_user)])
 
 
 @app.get("/")

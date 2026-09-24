@@ -6,6 +6,7 @@ import json
 import logging
 from app.workers.evaluation_worker import evaluate_steps
 from app.services.document_service import parse_upload, UnsupportedUpload, MAX_UPLOAD_BYTES
+from app.services.proficiency_service import get_app_user_id, record_and_update_proficiency
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,14 @@ async def evaluate(problemId: int = Form(...), steps: str = Form(...), image: Op
             document_text = upload.text
 
         result = await evaluate_steps(problemId, parsed_steps, image_base64_list, document_text, user["access_token"])
+
+        try:
+            app_user_id = await get_app_user_id(user["access_token"], user["id"])
+            await record_and_update_proficiency(app_user_id, problemId, result, user["access_token"])
+        except Exception:
+            # Proficiency bookkeeping is best-effort; a student's feedback shouldn't be
+            # blocked by it failing.
+            logger.exception("Failed to record proficiency for this attempt")
 
         return result
     
