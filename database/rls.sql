@@ -81,6 +81,10 @@ create policy "user_course: enroll self" on public.user_course
   for insert to authenticated
   with check ("userId" = public.current_app_user_id());
 
+create policy "user_course: unenroll self" on public.user_course
+  for delete to authenticated
+  using ("userId" = public.current_app_user_id());
+
 -- ---------------------------------------------------------------------------
 -- user_problem_attempt: an append-only log of graded attempts. Own rows only.
 -- ---------------------------------------------------------------------------

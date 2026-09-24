@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import ProficiencyRing from "@/components/ProficiencyRing";
+import MathText from "@/components/MathText";
 
 export default function Section() {
   const { sectionId } = useParams();
@@ -118,11 +119,13 @@ export default function Section() {
       {/* Course problems: the shared catalog, visible to everyone in the class */}
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-4">Course Problems</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-4">
           {courseProblems.map((problem) => (
             <Card key={problem.problemId || problem.id}>
               <CardHeader>
-                <CardTitle>{problem.title || `Problem ${problem.problemId || problem.id}`}</CardTitle>
+                <CardTitle className="line-clamp-2 leading-snug text-base">
+                  <MathText>{problem.problem}</MathText>
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <Button
@@ -134,34 +137,25 @@ export default function Section() {
               </CardContent>
             </Card>
           ))}
-
-          {courseId && (
-            <Card key="generate-problem">
-              <CardHeader>
-                <CardTitle>Generate Problem</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  className="w-full"
-                  onClick={() => generateProblem(false)}
-                  disabled={generating}
-                >
-                  {generating ? "Generating..." : "Generate Problem"}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
         </div>
+
+        {courseId && (
+          <Button variant="outline" onClick={() => generateProblem(false)} disabled={generating}>
+            {generating ? "Generating..." : "+ Generate Problem"}
+          </Button>
+        )}
       </section>
 
       {/* Generated problems: only the ones this student has generated for their own practice */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Your Generated Problems</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-4">
           {personalProblems.map((problem) => (
             <Card key={problem.problemId || problem.id}>
               <CardHeader>
-                <CardTitle>{problem.title || `Problem ${problem.problemId || problem.id}`}</CardTitle>
+                <CardTitle className="line-clamp-2 leading-snug text-base">
+                  <MathText>{problem.problem}</MathText>
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <Button
@@ -173,25 +167,13 @@ export default function Section() {
               </CardContent>
             </Card>
           ))}
-
-          {courseId && (
-            <Card key="generate-personal-problem">
-              <CardHeader>
-                <CardTitle>Practice on Your Own</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  onClick={() => generateProblem(true)}
-                  disabled={generatingPersonal}
-                >
-                  {generatingPersonal ? "Generating..." : "Generate Personal Problem"}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
         </div>
+
+        {courseId && (
+          <Button variant="outline" onClick={() => generateProblem(true)} disabled={generatingPersonal}>
+            {generatingPersonal ? "Generating..." : "+ Generate Personal Problem"}
+          </Button>
+        )}
       </section>
     </div>
   );

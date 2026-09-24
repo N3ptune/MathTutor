@@ -13,6 +13,7 @@ export default function RegisterClasses() {
   const [courses, setCourses] = useState([]);
   const [enrolledIds, setEnrolledIds] = useState(new Set());
   const [registeringId, setRegisteringId] = useState(null);
+  const [unregisteringId, setUnregisteringId] = useState(null);
 
   useEffect(() => {
     if (!supabaseUser) return;
@@ -59,6 +60,29 @@ export default function RegisterClasses() {
     }
   }
 
+  async function handleUnregister(courseId) {
+    setUnregisteringId(courseId);
+    try {
+      const { error } = await supabase
+        .from("user_course")
+        .delete()
+        .eq("userId", supabaseUser.userId)
+        .eq("courseId", courseId);
+
+      if (error) throw error;
+      setEnrolledIds((prev) => {
+        const next = new Set(prev);
+        next.delete(courseId);
+        return next;
+      });
+    } catch (err) {
+      console.error("Failed to unregister from class:", err);
+      alert("Unregistering failed: " + err.message);
+    } finally {
+      setUnregisteringId(null);
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
       <Button variant="ghost" size="sm" className="mb-4" onClick={() => navigate("/dashboard")}>
@@ -72,6 +96,7 @@ export default function RegisterClasses() {
           courses.map((course) => {
             const isEnrolled = enrolledIds.has(course.courseId);
             const isRegistering = registeringId === course.courseId;
+            const isUnregistering = unregisteringId === course.courseId;
 
             return (
               <Card key={course.courseId}>
@@ -79,14 +104,24 @@ export default function RegisterClasses() {
                   <CardTitle>{course.name}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Button
-                    className="w-full"
-                    variant={isEnrolled ? "secondary" : "default"}
-                    disabled={isEnrolled || isRegistering}
-                    onClick={() => handleRegister(course.courseId)}
-                  >
-                    {isEnrolled ? "Registered" : isRegistering ? "Registering..." : "Register"}
-                  </Button>
+                  {isEnrolled ? (
+                    <Button
+                      className="w-full"
+                      variant="destructive"
+                      disabled={isUnregistering}
+                      onClick={() => handleUnregister(course.courseId)}
+                    >
+                      {isUnregistering ? "Unregistering..." : "Unregister"}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full"
+                      disabled={isRegistering}
+                      onClick={() => handleRegister(course.courseId)}
+                    >
+                      {isRegistering ? "Registering..." : "Register"}
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );
