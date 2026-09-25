@@ -74,12 +74,27 @@ async function syncAppUser(authUser) {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined); // Supabase auth user
   const [supabaseUser, setSupabaseUser] = useState(null); // App user from your users table
+  // True when signed in but the app user row couldn't be loaded (e.g. offline)
+  const [appUserFailed, setAppUserFailed] = useState(false);
+  const [syncAttempt, setSyncAttempt] = useState(0);
 
   useEffect(() => {
     async function handleSession(session) {
       const authUser = session?.user ?? null;
       setUser(authUser);
-      setSupabaseUser(authUser ? await syncAppUser(authUser) : null);
+      setAppUserFailed(false);
+      if (!authUser) {
+        setSupabaseUser(null);
+        return;
+      }
+      let appUser = null;
+      try {
+        appUser = await syncAppUser(authUser);
+      } catch (err) {
+        console.error("Failed to sync app user:", err);
+      }
+      setSupabaseUser(appUser);
+      setAppUserFailed(!appUser);
     }
 
     // Get initial session
@@ -93,10 +108,12 @@ export function AuthProvider({ children }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [syncAttempt]);
+
+  const retryAppUser = () => setSyncAttempt((n) => n + 1);
 
   return (
-    <AuthState.Provider value={{ user, supabaseUser, setSupabaseUser }}>
+    <AuthState.Provider value={{ user, supabaseUser, setSupabaseUser, appUserFailed, retryAppUser }}>
       {children}
     </AuthState.Provider>
   );

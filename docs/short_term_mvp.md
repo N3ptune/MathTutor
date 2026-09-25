@@ -12,8 +12,8 @@
   - [X] Dashboard page
 - [X] Initialize FastAPI backend
 - [X] Create `/evaluate` endpoint (stub response)
-- [X] Set up Firebase Auth (email/password only)
-- [X] Set up PostgreSQL locally or on RDS
+- [X] Set up auth (originally Firebase, now Supabase Auth: email/password + Google)
+- [X] Set up PostgreSQL (Supabase)
 - [X] Create minimal DB schema:
   - [X] `users` table
   - [X] `attempts` table
@@ -45,20 +45,18 @@
 
 ### 🌐 Ship the MVP to the Web
 
-- [ ] Add loading states in UI
-- [ ] Add validation for user inputs
-- [ ] Improve layout and basic styling
-- [ ] Deploy frontend:
-  - [ ] AWS S3 bucket for static hosting
-  - [ ] CloudFront distribution
-  - [ ] Add custom domain and HTTPS
-- [ ] Deploy backend:
-  - [ ] Launch EC2 instance (t3.small)
-  - [ ] Install Python, FastAPI
-  - [ ] Configure reverse proxy (NGINX)
-  - [ ] Add environment variables (OpenAI key, Firebase keys, DB credentials)
-- [ ] Set up PostgreSQL RDS instance (if not local)
-- [ ] Configure CORS and security settings
+- [X] Add loading states in UI (full-screen throbber on every load and action)
+- [X] Add validation for user inputs (blank submissions blocked in UI and API)
+- [X] Improve layout and basic styling (responsive down to phone width)
+- [X] Deploy frontend:
+  - [X] AWS S3 bucket for static hosting
+  - [X] CloudFront distribution (HTTPS on the default CloudFront domain)
+  - [ ] Add custom domain
+- [X] Deploy backend (AWS App Runner from ECR instead of EC2 + NGINX):
+  - [X] Container image (Dockerfile) with Python and FastAPI
+  - [X] Environment variables and secrets via SSM Parameter Store
+- [X] Database on Supabase Postgres (instead of RDS)
+- [X] Configure CORS and security settings (allowed origins, Supabase token checks, RLS)
 - [ ] Perform end-to-end smoke tests:
   - [ ] Login → submit → AI evaluation → save → history
 
@@ -68,16 +66,18 @@
 
 ### ✨ Enhancements (If Time Allows)
 
-- [ ] Add topic-selector dropdown (Algebra, Calculus, etc.)
-- [ ] Add simple proficiency score per problem
-- [ ] Add progress chart (local, not full analytics system)
-- [ ] Add GitHub Actions CI for:
-  - [ ] Linting (flake8 / eslint)
-  - [ ] Backend unit tests
-  - [ ] Frontend build check
-- [ ] Add lightweight logging in backend (file + console)
-- [ ] Add better styling (Tailwind or Material UI)
-- [ ] Add basic rate limiting on `/evaluate`
+- [X] Add topic selector (class registration, courses, and sections)
+- [X] Add simple proficiency score (per section, based on correct answers)
+- [X] Add progress chart (proficiency rings per class and section)
+- [X] Add GitHub Actions CI for:
+  - [X] Linting (flake8 / eslint)
+  - [X] Backend unit tests (pytest)
+  - [X] Frontend unit tests (Vitest)
+  - [X] Frontend build check
+- [X] Add lightweight logging in backend
+- [X] Add better styling (Tailwind + shadcn/ui)
+- [X] Add basic rate limiting on `/evaluate`
+- [X] Per-step right/wrong feedback and attempt history
 - [ ] Add simple admin page (history lookup)
 
 ---
@@ -91,8 +91,8 @@
 - [ ] Test invalid inputs (empty steps, malformed spacing)
 - [ ] Validate error reporting accuracy
 - [ ] Run test accounts through typical problems
-- [ ] Finalize README and deployment instructions
-- [ ] Tag MVP release (`v0.1.0`)
+- [X] Finalize README and deployment instructions
+- [X] Tag MVP release (`v0.1.0`)
 
 ---
 

@@ -1,6 +1,5 @@
 import openai
 import json
-import os
 import asyncio
 
 _client = None

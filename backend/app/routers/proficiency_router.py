@@ -33,7 +33,7 @@ async def exam_start(body: ExamStartRequest, user: dict = Depends(require_user))
         return await start_exam_attempt(app_user_id, body.sectionId, user["access_token"])
     except Exception:
         logger.exception("Failed to start proficiency exam")
-        raise HTTPException(status_code=500, detail="Failed to start proficiency exam")
+        raise HTTPException(status_code=500, detail="Couldn't start the exam right now. Please try again.")
 
 
 @router.post("/exam/submit")
@@ -44,4 +44,4 @@ async def exam_submit(body: ExamSubmitRequest, user: dict = Depends(require_user
         return await submit_exam_attempt(app_user_id, body.examAttemptId, answers, user["access_token"])
     except Exception:
         logger.exception("Failed to submit proficiency exam")
-        raise HTTPException(status_code=500, detail="Failed to submit proficiency exam")
+        raise HTTPException(status_code=500, detail="Couldn't grade the exam right now. Please try again.")

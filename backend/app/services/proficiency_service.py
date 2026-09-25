@@ -1,4 +1,4 @@
-from app.config import SUPABASE_URL, SUPABASE_ANON_KEY
+from app.config import SUPABASE_URL
 from app.services.supabase_service import _user_headers
 import httpx
 
@@ -32,18 +32,10 @@ async def get_problem_section_id(problem_id: int, access_token: str) -> int:
     return data[0]["sectionId"]
 
 
-async def record_problem_attempt(
-    user_id: int, problem_id: int, is_correct: bool, proficiency_rating: float, ai_feedback: str, access_token: str
-) -> None:
+async def record_problem_attempt(user_id: int, problem_id: int, attempt: dict, access_token: str) -> None:
     url = f"{SUPABASE_URL}/rest/v1/user_problem_attempt"
     headers = {**_user_headers(access_token), "Content-Type": "application/json"}
-    payload = {
-        "userId": user_id,
-        "problemId": problem_id,
-        "isCorrect": is_correct,
-        "proficiencyRating": proficiency_rating,
-        "aiFeedback": ai_feedback,
-    }
+    payload = {"userId": user_id, "problemId": problem_id, **attempt}
     async with httpx.AsyncClient() as client:
         resp = await client.post(url, headers=headers, json=payload)
     resp.raise_for_status()
@@ -110,12 +102,27 @@ async def recompute_section_proficiency(user_id: int, section_id: int, access_to
     return await _upsert_proficiency(user_id, section_id, min(rating, PRACTICE_RATING_CAP), False, access_token)
 
 
-async def record_and_update_proficiency(user_id: int, problem_id: int, evaluation_result: dict, access_token: str) -> None:
-    is_correct = bool(evaluation_result.get("all_correct", False))
-    rating = float(evaluation_result.get("proficiency_rating", 0) or 0)
-    ai_feedback = " ".join(evaluation_result.get("feedback", []) or [])[:4000]
+def build_attempt_record(evaluation_result: dict, submitted_steps: list[str]) -> dict:
+    """The user_problem_attempt columns for one graded submission, including the full
+    step-by-step history so the student can review past attempts."""
+    feedback = evaluation_result.get("feedback", []) or []
+    # Uploads are graded from the steps the AI extracted, so store those instead
+    steps = evaluation_result.get("extracted_steps") or submitted_steps
+    return {
+        "isCorrect": bool(evaluation_result.get("all_correct", False)),
+        "proficiencyRating": float(evaluation_result.get("proficiency_rating", 0) or 0),
+        "aiFeedback": " ".join(feedback)[:4000],
+        "steps": steps,
+        "stepFeedback": feedback,
+        "stepCorrect": evaluation_result.get("step_correct", []) or [],
+    }
 
-    await record_problem_attempt(user_id, problem_id, is_correct, rating, ai_feedback, access_token)
+
+async def record_and_update_proficiency(
+    user_id: int, problem_id: int, evaluation_result: dict, submitted_steps: list[str], access_token: str
+) -> None:
+    attempt = build_attempt_record(evaluation_result, submitted_steps)
+    await record_problem_attempt(user_id, problem_id, attempt, access_token)
     section_id = await get_problem_section_id(problem_id, access_token)
     await recompute_section_proficiency(user_id, section_id, access_token)
 

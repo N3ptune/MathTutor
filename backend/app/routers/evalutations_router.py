@@ -18,24 +18,43 @@ router = APIRouter(prefix="/evaluate", tags=["Evaluation"])
 
 class EvaluateResponse(BaseModel):
     feedback: list[str]
+    step_correct: list[Optional[bool]] = []
+    all_correct: bool = False
     extracted_steps: Optional[list[str]] = None
+
+
+def clean_steps(raw: str) -> list[str]:
+    """Parses the submitted JSON step list, drops blank steps, and rejects anything malformed."""
+    try:
+        parsed = json.loads(raw)
+    except Exception:
+        parsed = []
+
+    if (
+        not isinstance(parsed, list)
+        or len(parsed) > MAX_STEPS
+        or not all(isinstance(s, str) and len(s) <= MAX_STEP_LENGTH for s in parsed)
+    ):
+        raise HTTPException(status_code=400, detail="Invalid steps")
+
+    return [s.strip() for s in parsed if s.strip()]
+
 
 # Takes in the evaluation request
 # Throws back the parsed and complete feedback
 @router.post("/", response_model=EvaluateResponse)
-async def evaluate(problemId: int = Form(...), steps: str = Form(...), image: Optional[UploadFile] = File(None), user: dict = Depends(require_user)):
+async def evaluate(
+    problemId: int = Form(...),
+    steps: str = Form(...),
+    image: Optional[UploadFile] = File(None),
+    user: dict = Depends(require_user),
+):
     try:
-        try:
-            parsed_steps = json.loads(steps)
-        except Exception:
-            parsed_steps = []
+        parsed_steps = clean_steps(steps)
 
-        if (
-            not isinstance(parsed_steps, list)
-            or len(parsed_steps) > MAX_STEPS
-            or not all(isinstance(s, str) and len(s) <= MAX_STEP_LENGTH for s in parsed_steps)
-        ):
-            raise HTTPException(status_code=400, detail="Invalid steps")
+        # An empty submission would still spend an AI call and count as a wrong attempt
+        if not parsed_steps and image is None:
+            raise HTTPException(status_code=400, detail="Enter at least one step or attach a file.")
 
         image_base64_list = []
         document_text = ""
@@ -51,19 +70,19 @@ async def evaluate(problemId: int = Form(...), steps: str = Form(...), image: Op
 
         try:
             app_user_id = await get_app_user_id(user["access_token"], user["id"])
-            await record_and_update_proficiency(app_user_id, problemId, result, user["access_token"])
+            await record_and_update_proficiency(app_user_id, problemId, result, parsed_steps, user["access_token"])
         except Exception:
             # Proficiency bookkeeping is best-effort; a student's feedback shouldn't be
             # blocked by it failing.
             logger.exception("Failed to record proficiency for this attempt")
 
         return result
-    
+
     except HTTPException:
         raise
     except UnsupportedUpload as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception:
         logger.exception("Evaluation failed")
-        raise HTTPException(status_code=500, detail="Evaluation failed")
+        raise HTTPException(status_code=500, detail="We couldn't grade that right now. Please try again.")
     

@@ -1,7 +1,5 @@
 import os
 
-import logging
-
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import evalutations_router

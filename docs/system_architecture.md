@@ -53,7 +53,7 @@ A template listing environment variables required for the project:
 
 - API keys
 - DB credentials
-- Firebase settings
+- Supabase settings
 - AWS configuration
 
 ### docker-compose.yml
@@ -306,7 +306,7 @@ Generates personalized study guides.
 
 #### AuthCallback.jsx
 
-Handles Firebase redirect logins.
+Handles Supabase Auth (Google OAuth) redirect logins.
 
 ### 🪝 hooks/
 
@@ -321,7 +321,7 @@ Custom React hooks, e.g.:
 Helpful logic:
 
 - `latex.ts` — formatting math for UI
-- `firebaseClient.js` — browser-side Firebase SDK
+- `supabase.js` — browser-side Supabase client and auth helpers
 
 ### 🔌 services/
 
@@ -333,7 +333,7 @@ CRUD operations for backend.
 
 #### auth.js
 
-Sign-in/out with Firebase Auth.
+Sign-in/out with Supabase Auth.
 
 #### analytics.js
 
@@ -381,7 +381,7 @@ FastAPI app initialization:
 - Middleware
 - Routers
 - Logging
-- Firebase auth integration
+- Supabase auth integration (`auth.py` verifies access tokens)
 
 ### 📄 config.py
 
@@ -498,7 +498,6 @@ Alembic auto-generated migration files.
 
 Helpers for:
 
-- Firebase admin
 - JWT tools
 - Logging
 - Validation

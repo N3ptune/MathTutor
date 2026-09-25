@@ -1,4 +1,4 @@
-# Firebase Admin Private Key
+# Service account keys (never commit credentials)
 **/serviceAccountKey.json
 
 # Environment variables
@@ -36,3 +36,6 @@ frontend/.venv/
 .cursor/debug-*.log
 .cursor/
 .vscode/backend/debug_requirements_probe.py
+
+# Test caches
+.pytest_cache/

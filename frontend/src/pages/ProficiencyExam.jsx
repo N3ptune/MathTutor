@@ -1,6 +1,5 @@
-import { useEffect, useState, useContext } from "react";
+import { useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "../supabase";
 import { AuthState } from "../authState.jsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,10 @@ import { Label } from "@/components/ui/label";
 import MathText from "@/components/MathText";
 import { Card, CardContent } from "@/components/ui/card";
 import ProficiencyRing from "@/components/ProficiencyRing";
+import LoadingOverlay from "@/components/LoadingOverlay";
+import ErrorMessage from "@/components/ErrorMessage";
+import { apiFetch, friendlyError } from "@/lib/api";
+import { usePageLoad } from "@/lib/usePageLoad";
 import { ArrowLeft } from "lucide-react";
 
 export default function ProficiencyExam() {
@@ -18,44 +21,16 @@ export default function ProficiencyExam() {
   const [examAttemptId, setExamAttemptId] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
-  const [starting, setStarting] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
+  const [submitError, setSubmitError] = useState("");
 
-  useEffect(() => {
-    if (!supabaseUser) return;
-
-    async function startExam() {
-      setStarting(true);
-      setError("");
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-        const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch(`${apiUrl}/api/proficiency/exam/start`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session?.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ sectionId: Number(sectionId) }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Failed to start exam");
-
-        setExamAttemptId(data.examAttemptId);
-        setQuestions(data.questions);
-      } catch (err) {
-        console.error("Failed to start exam:", err);
-        setError("Couldn't start the exam. Please try again.");
-      } finally {
-        setStarting(false);
-      }
-    }
-
-    startExam();
-  }, [sectionId, supabaseUser]);
+  // Starting an exam samples fresh questions, so a retry after a failure is safe
+  const { loading: starting, error: startError, retry } = usePageLoad(async () => {
+    const data = await apiFetch("/api/proficiency/exam/start", { json: { sectionId: Number(sectionId) } });
+    setExamAttemptId(data.examAttemptId);
+    setQuestions(data.questions);
+  }, [sectionId, supabaseUser], Boolean(supabaseUser));
 
   const updateAnswer = (examQuestionId, value) => {
     setAnswers((prev) => ({ ...prev, [examQuestionId]: value }));
@@ -63,32 +38,21 @@ export default function ProficiencyExam() {
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    setError("");
+    setSubmitError("");
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${apiUrl}/api/proficiency/exam/submit`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const data = await apiFetch("/api/proficiency/exam/submit", {
+        json: {
           examAttemptId,
           answers: questions.map((q) => ({
             examQuestionId: q.examQuestionId,
             answer: answers[q.examQuestionId] || "",
           })),
-        }),
+        },
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed to submit exam");
-
       setResult(data);
     } catch (err) {
       console.error("Failed to submit exam:", err);
-      setError("Couldn't submit the exam. Please try again.");
+      setSubmitError(friendlyError(err));
     } finally {
       setSubmitting(false);
     }
@@ -97,7 +61,10 @@ export default function ProficiencyExam() {
   const feedbackByQuestion = Object.fromEntries((result?.feedback || []).map((f) => [f.examQuestionId, f]));
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10 flex flex-col items-center">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col items-center">
+      <LoadingOverlay show={starting} message="Preparing your exam..." />
+      <LoadingOverlay show={submitting} message="Grading your exam..." />
+
       <div className="w-full mb-4">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
           <ArrowLeft className="size-4" />
@@ -106,8 +73,7 @@ export default function ProficiencyExam() {
       </div>
       <h1 className="text-2xl font-bold mb-6">Proficiency Exam</h1>
 
-      {starting && <p className="text-muted-foreground">Preparing your exam...</p>}
-      {error && <p className="text-destructive mb-4">{error}</p>}
+      <ErrorMessage message={startError} onRetry={retry} className="mb-4" />
 
       {!starting && result && (
         <Card className="w-full mb-8">
@@ -134,7 +100,7 @@ export default function ProficiencyExam() {
 
                 {result ? (
                   <>
-                    <p className="text-sm italic text-muted-foreground">{answers[q.examQuestionId]}</p>
+                    <p className="text-sm italic text-muted-foreground break-words">{answers[q.examQuestionId]}</p>
                     <div
                       className={`p-3 rounded-lg text-sm border-l-4 ${
                         feedbackByQuestion[q.examQuestionId]?.isCorrect
@@ -163,13 +129,16 @@ export default function ProficiencyExam() {
       )}
 
       {!starting && !result && questions.length > 0 && (
-        <Button size="lg" onClick={handleSubmit} disabled={submitting}>
-          {submitting ? "Grading..." : "Submit Exam"}
-        </Button>
+        <div className="w-full flex flex-col items-center gap-3">
+          <ErrorMessage message={submitError} onRetry={handleSubmit} />
+          <Button size="lg" className="w-full sm:w-auto" onClick={handleSubmit} disabled={submitting}>
+            Submit Exam
+          </Button>
+        </div>
       )}
 
       {result && (
-        <Button size="lg" variant="outline" onClick={() => navigate(`/section/${sectionId}`)}>
+        <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={() => navigate(`/section/${sectionId}`)}>
           Back to Section
         </Button>
       )}

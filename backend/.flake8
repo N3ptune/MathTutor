@@ -1,0 +1,5 @@
+[flake8]
+# CI enforces the checks that catch real bugs (syntax errors, undefined names, unused
+# imports/variables). Style-only warnings are left to editors so they don't block merges.
+select = E9,F
+exclude = __pycache__,.venv

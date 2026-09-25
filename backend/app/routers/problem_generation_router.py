@@ -26,4 +26,4 @@ async def generate_problem(
         return {"status": "success", "problem": problem}
     except Exception:
         logger.exception("Problem generation failed")
-        raise HTTPException(status_code=500, detail="Problem generation failed")
+        raise HTTPException(status_code=500, detail="Couldn't generate a problem right now. Please try again.")

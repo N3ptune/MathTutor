@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase";
 import { AuthState } from "../authState";
@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import ProficiencyRing from "@/components/ProficiencyRing";
 import MathText from "@/components/MathText";
+import LoadingOverlay from "@/components/LoadingOverlay";
+import ErrorMessage from "@/components/ErrorMessage";
+import { apiFetch, friendlyError } from "@/lib/api";
+import { usePageLoad } from "@/lib/usePageLoad";
 
 export default function Section() {
   const { sectionId } = useParams();
@@ -15,56 +19,47 @@ export default function Section() {
   const [courseId, setCourseId] = useState(null); // store courseId
   const [sectionName, setSectionName] = useState("");
   const [generatingPersonal, setGeneratingPersonal] = useState(false);
+  const [generateError, setGenerateError] = useState("");
   const [proficiency, setProficiency] = useState(null);
   const navigate = useNavigate();
 
   const courseProblems = problems.filter((p) => p.source !== "user");
   const personalProblems = problems.filter((p) => p.source === "user");
 
-  useEffect(() => {
-    if (!supabaseUser) return;
+  const { loading, error: loadError, retry } = usePageLoad(async () => {
+    // Fetch problems along with section info to get courseId
+    const { data: problemsData, error } = await supabase
+      .from("problem")
+      .select("*, section(courseId)")
+      .eq("sectionId", sectionId);
 
-    async function fetchProblems() {
-      try {
-        // Fetch problems along with section info to get courseId
-        const { data: problemsData, error } = await supabase
-          .from("problem")
-          .select("*, section(courseId)")
-          .eq("sectionId", sectionId);
+    if (error) throw error;
 
-        if (error) throw error;
+    setProblems(problemsData);
 
-        setProblems(problemsData);
+    // Look the course up from the section itself so empty sections can still generate
+    const { data: sectionData, error: sectionError } = await supabase
+      .from("section")
+      .select("name, courseId")
+      .eq("sectionId", sectionId)
+      .single();
 
-        // Look the course up from the section itself so empty sections can still generate
-        const { data: sectionData, error: sectionError } = await supabase
-          .from("section")
-          .select("name, courseId")
-          .eq("sectionId", sectionId)
-          .single();
+    if (sectionError) throw sectionError;
 
-        if (sectionError) throw sectionError;
+    setCourseId(sectionData.courseId);
+    setSectionName(sectionData.name);
 
-        setCourseId(sectionData.courseId);
-        setSectionName(sectionData.name);
+    const { data: profData, error: profError } = await supabase
+      .from("proficiency")
+      .select("rating, examPassed")
+      .eq("userId", supabaseUser.userId)
+      .eq("sectionId", sectionId)
+      .maybeSingle();
 
-        const { data: profData, error: profError } = await supabase
-          .from("proficiency")
-          .select("rating, examPassed")
-          .eq("userId", supabaseUser.userId)
-          .eq("sectionId", sectionId)
-          .maybeSingle();
+    if (profError) throw profError;
 
-        if (profError) throw profError;
-
-        setProficiency(profData);
-      } catch (err) {
-        console.error("Failed to fetch problems:", err);
-      }
-    }
-
-    fetchProblems();
-  }, [sectionId, supabaseUser]);
+    setProficiency(profData);
+  }, [sectionId, supabaseUser], Boolean(supabaseUser));
 
   const generatePersonalProblem = async () => {
     if (!courseId) {
@@ -73,42 +68,40 @@ export default function Section() {
     }
 
     setGeneratingPersonal(true);
+    setGenerateError("");
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${apiUrl}/api/problem_generation/generate/`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${session?.access_token}` },
-      body: new URLSearchParams({
-        section_id: sectionId,
-        course_id: courseId,
-        personal: "true",
-      }),
-    });
+      const data = await apiFetch("/api/problem_generation/generate/", {
+        body: new URLSearchParams({
+          section_id: sectionId,
+          course_id: courseId,
+          personal: "true",
+        }),
+      });
 
-      const data = await res.json();
-
-      if (res.ok && data.status === "success") {
-        setProblems((prev) => [...prev, data.problem]);
-      } else {
-        console.error("Failed to generate problem:", data);
-      }
+      if (data?.status !== "success") throw new Error("Problem generation did not succeed");
+      setProblems((prev) => [...prev, data.problem]);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to generate problem:", err);
+      setGenerateError(friendlyError(err));
     } finally {
       setGeneratingPersonal(false);
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <LoadingOverlay show={loading} message="Loading section..." />
+      <LoadingOverlay show={generatingPersonal} message="Generating a practice problem..." />
+
       <Button variant="ghost" size="sm" className="mb-4" onClick={() => navigate(-1)}>
         <ArrowLeft className="size-4" />
         Back
       </Button>
 
-      <div className="flex items-center justify-between mb-8 gap-6">
-        <h1 className="text-3xl font-bold">{sectionName || `Section ${sectionId}`}</h1>
+      {loadError && <ErrorMessage message={loadError} onRetry={retry} className="mb-6" />}
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 sm:gap-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">{sectionName || `Section ${sectionId}`}</h1>
         <div className="flex items-center gap-4">
           <ProficiencyRing rating={proficiency?.rating || 0} examPassed={proficiency?.examPassed || false} />
           <Button variant="outline" onClick={() => navigate(`/section/${sectionId}/exam`)}>
@@ -164,9 +157,16 @@ export default function Section() {
           ))}
         </div>
 
+        <ErrorMessage message={generateError} onRetry={generatePersonalProblem} className="mb-4" />
+
         {courseId && (
-          <Button variant="outline" onClick={generatePersonalProblem} disabled={generatingPersonal}>
-            {generatingPersonal ? "Generating..." : "+ Generate Personal Problem"}
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={generatePersonalProblem}
+            disabled={generatingPersonal}
+          >
+            + Generate Personal Problem
           </Button>
         )}
       </section>

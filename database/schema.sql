@@ -51,8 +51,8 @@ CREATE TABLE user_course (
     PRIMARY KEY (userId, courseId)
 );
 
--- One row per graded problem attempt. AI assigns a 0-100 proficiencyRating for the attempt,
--- which feeds the rolling proficiency score for that problem's section.
+-- One row per graded problem attempt. isCorrect feeds the section's proficiency; the AI's
+-- 0-100 proficiencyRating is kept for reference.
 CREATE TABLE user_problem_attempt (
     attemptId BIGSERIAL PRIMARY KEY,
     userId BIGINT NOT NULL REFERENCES users(userId) ON DELETE CASCADE,
@@ -60,6 +60,10 @@ CREATE TABLE user_problem_attempt (
     isCorrect BOOLEAN NOT NULL,
     proficiencyRating REAL NOT NULL,
     aiFeedback TEXT,
+    -- Full history of the submission: steps as graded, per-step feedback, per-step correctness
+    steps JSONB,
+    stepFeedback JSONB,
+    stepCorrect JSONB,
     createdAt TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

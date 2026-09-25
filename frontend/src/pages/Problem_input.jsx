@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase";
 import { AuthState } from "../authState.jsx";
@@ -7,14 +7,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import MathText from "@/components/MathText";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { ArrowLeft } from "lucide-react";
+import LoadingOverlay from "@/components/LoadingOverlay";
+import ErrorMessage from "@/components/ErrorMessage";
+import StepFeedback, { ResultBanner } from "@/components/StepFeedback";
+import AttemptHistory from "@/components/AttemptHistory";
+import { apiFetch, friendlyError } from "@/lib/api";
+import { usePageLoad } from "@/lib/usePageLoad";
+import { canSubmitSteps, nonBlankSteps } from "@/lib/steps";
+import { ArrowLeft, X } from "lucide-react";
+
+async function fetchAttempts(userId, problemId) {
+  const { data, error } = await supabase
+    .from("user_problem_attempt")
+    .select("attemptId, createdAt, isCorrect, aiFeedback, steps, stepFeedback, stepCorrect")
+    .eq("userId", userId)
+    .eq("problemId", problemId)
+    .order("createdAt", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
 
 export default function ProblemInput() {
   const { problemId } = useParams();
@@ -24,33 +36,36 @@ export default function ProblemInput() {
   const [problemText, setProblemText] = useState("");
   const [steps, setSteps] = useState([""]);
   const [feedback, setFeedback] = useState([]);
+  const [stepCorrect, setStepCorrect] = useState([]);
+  const [allCorrect, setAllCorrect] = useState(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [imageFile, setImageFile] = useState(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const [attempts, setAttempts] = useState([]);
 
-  useEffect(() => {
-    if (!supabaseUser) return;
+  const { loading, error: loadError, retry } = usePageLoad(async () => {
+    const { data, error } = await supabase
+      .from("problem")
+      .select("problem")
+      .eq("problemId", problemId)
+      .single();
 
-    async function fetchProblem() {
-      try {
-        const { data, error } = await supabase
-          .from("problem")
-          .select("*")
-          .eq("problemId", problemId)
-          .single();
+    if (error) throw error;
+    setProblemText(data.problem);
+    setAttempts(await fetchAttempts(supabaseUser.userId, problemId));
+  }, [problemId, supabaseUser], Boolean(supabaseUser));
 
-        if (error) throw error;
-
-        setProblemText(data.problem);
-      } catch (err) {
-        console.error("Failed to fetch problem:", err);
-      }
-    }
-
-    fetchProblem();
-  }, [problemId, supabaseUser]);
+  const canSubmit = canSubmitSteps(steps, imageFile);
 
   const convertInput = (text) => {
-    return text.replace(/sqrt\(/gi, "\u221A(");
+    return text.replace(/sqrt\(/gi, "√(");
+  };
+
+  const clearResult = () => {
+    setFeedback([]);
+    setStepCorrect([]);
+    setAllCorrect(null);
   };
 
   const updateStep = (index, value) => {
@@ -62,10 +77,9 @@ export default function ProblemInput() {
   const addStep = () => setSteps([...steps, ""]);
 
   const deleteStep = (index) => {
-    const updatedSteps = steps.filter((_, i) => i !== index);
-    const updatedFeedback = feedback.filter((_, i) => i !== index);
-    setSteps(updatedSteps);
-    setFeedback(updatedFeedback);
+    setSteps(steps.filter((_, i) => i !== index));
+    setFeedback(feedback.filter((_, i) => i !== index));
+    setStepCorrect(stepCorrect.filter((_, i) => i !== index));
   };
 
   const handleImageUpload = (event) => {
@@ -73,58 +87,59 @@ export default function ProblemInput() {
     if (!file) return;
 
     setSteps([""]);
-    setFeedback([]);
+    clearResult();
     setImageFile(file);
   };
 
+  const removeFile = () => {
+    setImageFile(null);
+    // Remounting the input is the only reliable way to clear a file input
+    setFileInputKey((k) => k + 1);
+  };
+
   const handleSubmit = async () => {
+    if (!canSubmit || isEvaluating) return;
+
     setIsEvaluating(true);
+    setSubmitError("");
+
+    const submittedSteps = nonBlankSteps(steps);
 
     try {
       const formData = new FormData();
       formData.append("problemId", problemId);
-      formData.append("steps", JSON.stringify(steps));
-
+      formData.append("steps", JSON.stringify(submittedSteps));
       if (imageFile) {
         formData.append("image", imageFile);
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`${apiUrl}/api/evaluate/`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-        body: formData,
-      });
+      const data = await apiFetch("/api/evaluate/", { body: formData });
 
-      let data;
-      try {
-        data = await response.json();
-      } catch (jsonErr) {
-        console.error("Failed to parse JSON:", jsonErr);
-        data = {};
-      }
-
-      if (!response.ok) {
-        setFeedback([data.detail || "Something went wrong evaluating your steps."]);
-        setIsEvaluating(false);
-        return;
-      }
-
-      if (data.extracted_steps) {
-        setSteps(data.extracted_steps);
-      }
-
+      // Show the steps that were actually graded, so feedback lines up with them
+      setSteps(data.extracted_steps || (submittedSteps.length ? submittedSteps : [""]));
       setFeedback(data.feedback || []);
+      setStepCorrect(data.step_correct || []);
+      setAllCorrect(Boolean(data.all_correct));
+
+      try {
+        setAttempts(await fetchAttempts(supabaseUser.userId, problemId));
+      } catch (err) {
+        // The grade is already on screen; a stale history list isn't worth an error
+        console.error("Failed to refresh attempt history:", err);
+      }
     } catch (err) {
       console.error("Evaluation error:", err);
+      setSubmitError(friendlyError(err));
+    } finally {
+      setIsEvaluating(false);
     }
-
-    setIsEvaluating(false);
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10 flex flex-col items-center">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col items-center">
+      <LoadingOverlay show={loading} message="Loading problem..." />
+      <LoadingOverlay show={isEvaluating} message="Evaluating your work..." />
+
       <div className="w-full mb-4">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
           <ArrowLeft className="size-4" />
@@ -133,82 +148,104 @@ export default function ProblemInput() {
       </div>
       <h1 className="text-2xl font-bold mb-6">Solve the Problem</h1>
 
-      {/* Problem Display */}
-      <Card className="w-full mb-8">
-        <CardContent>
-          <MathText as="p" className="text-lg">{problemText || "Loading problem..."}</MathText>
-        </CardContent>
-      </Card>
+      {loadError ? (
+        <ErrorMessage message={loadError} onRetry={retry} />
+      ) : (
+        <>
+          {/* Problem Display */}
+          <Card className="w-full mb-8">
+            <CardContent>
+              <MathText as="p" className="text-lg break-words">{problemText}</MathText>
+            </CardContent>
+          </Card>
 
-      {/* Steps */}
-      <div className="w-full space-y-4 mb-8">
-        <h2 className="text-xl font-semibold">Steps</h2>
+          {/* Steps */}
+          <div className="w-full space-y-4 mb-8">
+            <h2 className="text-xl font-semibold">Steps</h2>
 
-        {steps.map((step, index) => (
-          <div key={index} className="flex items-start gap-4">
-            {/* Step input */}
-            <div className="flex-1 space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Step {index + 1}</Label>
-                <button
-                  onClick={() => deleteStep(index)}
-                  className="text-destructive hover:text-destructive/80 text-lg font-bold leading-none cursor-pointer"
-                >
-                  &times;
-                </button>
+            {steps.map((step, index) => (
+              <div key={index} className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4">
+                {/* Step input */}
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor={`step-${index}`}>Step {index + 1}</Label>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-destructive hover:text-destructive/80"
+                      onClick={() => deleteStep(index)}
+                      aria-label={`Delete step ${index + 1}`}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                  <Input
+                    id={`step-${index}`}
+                    type="text"
+                    value={step}
+                    onChange={(e) => updateStep(index, e.target.value)}
+                    placeholder="Enter step..."
+                  />
+                  {step && <MathText as="div" className="text-sm text-muted-foreground px-1 overflow-x-auto">{step}</MathText>}
+                </div>
+
+                {/* Feedback */}
+                {feedback[index] && (
+                  <StepFeedback
+                    text={feedback[index]}
+                    correct={stepCorrect[index] ?? null}
+                    className="w-full md:w-2/5 md:mt-10"
+                  />
+                )}
               </div>
+            ))}
+
+            <Button variant="outline" className="w-full sm:w-auto" onClick={addStep}>
+              + Add Step
+            </Button>
+          </div>
+
+          {/* Image Upload */}
+          <div className="w-full mb-6">
+            <Label htmlFor="image-upload" className="mb-2 block">Upload Image or PDF (optional)</Label>
+            <div className="flex items-center gap-2">
               <Input
-                type="text"
-                value={step}
-                onChange={(e) => updateStep(index, e.target.value)}
-                placeholder="Enter step..."
+                key={fileInputKey}
+                id="image-upload"
+                type="file"
+                accept="image/*, .pdf"
+                onChange={handleImageUpload}
               />
-              {step && <MathText as="div" className="text-sm text-muted-foreground px-1">{step}</MathText>}
+              {imageFile && (
+                <Button variant="ghost" size="sm" onClick={removeFile}>
+                  Remove
+                </Button>
+              )}
             </div>
+          </div>
 
-            {/* Feedback */}
-            {feedback[index] && (
-              <div className="w-2/5 bg-green-50 border-l-4 border-green-500 p-3 rounded-lg text-sm dark:bg-green-950/30 dark:border-green-600">
-                <MathText>{feedback[index]}</MathText>
-              </div>
+          {/* Result + Submit */}
+          <div className="w-full flex flex-col items-center gap-3 mb-10">
+            {allCorrect !== null && <ResultBanner allCorrect={allCorrect} />}
+            <ErrorMessage message={submitError} onRetry={canSubmit ? handleSubmit : undefined} />
+            <Button
+              size="lg"
+              className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleSubmit}
+              disabled={!canSubmit || isEvaluating}
+            >
+              Submit Steps
+            </Button>
+            {!canSubmit && (
+              <p className="text-sm text-muted-foreground text-center">
+                Enter at least one step or attach a file to submit.
+              </p>
             )}
           </div>
-        ))}
 
-        <Button variant="outline" onClick={addStep}>
-          + Add Step
-        </Button>
-      </div>
-
-      {/* Image Upload */}
-      <div className="w-full mb-6">
-        <Label htmlFor="image-upload" className="mb-2 block">Upload Image (optional)</Label>
-        <Input
-          id="image-upload"
-          type="file"
-          accept="image/*, .pdf"
-          onChange={handleImageUpload}
-        />
-      </div>
-
-      {/* Submit */}
-      <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleSubmit}>
-        Submit Steps
-      </Button>
-
-      {/* Evaluation Dialog */}
-      <Dialog open={isEvaluating} onOpenChange={() => {}}>
-        <DialogContent showCloseButton={false} className="sm:max-w-xs">
-          <DialogHeader>
-            <DialogTitle className="sr-only">Evaluating</DialogTitle>
-            <DialogDescription className="sr-only">Your steps are being evaluated</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center gap-4 py-4">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary" />
-            <p className="text-muted-foreground">Evaluating...</p>
-          </div>
-        </DialogContent>
-      </Dialog>
+          <AttemptHistory attempts={attempts} />
+        </>
+      )}
     </div>
   );
 }

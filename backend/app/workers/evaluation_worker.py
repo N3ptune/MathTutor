@@ -1,5 +1,5 @@
 from app.services.supabase_service import get_problem_text
-from app.services.ai_service import send_ai_request, parse_ai_feedback
+from app.services.ai_service import send_ai_request
 
 import json
 
@@ -35,7 +35,9 @@ A student submitted a written solution (an image and/or text extracted from thei
 2. Evaluate each step.
 3. Do NOT give away the final answer.
 
-4. Rate how strongly this attempt demonstrates mastery of the section's topic, as an integer
+4. Say whether each step is mathematically correct (step_correct, one true/false per step,
+   in the same order as extracted_steps).
+5. Rate how strongly this attempt demonstrates mastery of the section's topic, as an integer
    from 0 to 100 (proficiency_rating), and say whether the final answer and overall approach
    were fully correct (all_correct).
 
@@ -50,6 +52,7 @@ Respond ONLY with valid JSON in this format:
     "feedback for step 1",
     "feedback for step 2"
   ],
+  "step_correct": [true, false],
   "proficiency_rating": 0,
   "all_correct": false
 }}
@@ -86,9 +89,10 @@ Problem:
     else:
         prompt = f"""
 You are a helpful math tutor.
-Evaluate each step. Also rate how strongly this attempt demonstrates mastery of the section's
-topic, as an integer from 0 to 100 (proficiency_rating), and say whether the final answer and
-overall approach were fully correct (all_correct).
+Evaluate each step, and say whether each step is mathematically correct (step_correct, one
+true/false per step, in order). Also rate how strongly this attempt demonstrates mastery of the
+section's topic, as an integer from 0 to 100 (proficiency_rating), and say whether the final answer
+and overall approach were fully correct (all_correct).
 Respond ONLY with JSON:
 
 {{
@@ -96,6 +100,7 @@ Respond ONLY with JSON:
     "feedback 1",
     "feedback 2"
   ],
+  "step_correct": [true, false],
   "proficiency_rating": 0,
   "all_correct": false
 }}
@@ -122,6 +127,36 @@ Problem:
 
     raw_response = await send_ai_request(messages)
 
-    data = json.loads(raw_response)
+    return normalize_evaluation(json.loads(raw_response))
 
-    return data
+
+# The model's JSON is untrusted, so coerce it into the shape the router and frontend expect:
+# one feedback string and one correctness flag (True/False, or None if the model omitted it) per step.
+def normalize_evaluation(data: dict) -> dict:
+    if not isinstance(data, dict):
+        data = {}
+
+    feedback = [str(f) for f in data.get("feedback") or [] if f is not None]
+
+    raw_correct = data.get("step_correct")
+    raw_correct = raw_correct if isinstance(raw_correct, list) else []
+    step_correct = [c if isinstance(c, bool) else None for c in raw_correct[:len(feedback)]]
+    step_correct += [None] * (len(feedback) - len(step_correct))
+
+    try:
+        rating = float(data.get("proficiency_rating") or 0)
+    except (TypeError, ValueError):
+        rating = 0.0
+
+    result = {
+        "feedback": feedback,
+        "step_correct": step_correct,
+        "all_correct": data.get("all_correct") is True,
+        "proficiency_rating": max(0.0, min(100.0, rating)),
+    }
+
+    extracted = data.get("extracted_steps")
+    if isinstance(extracted, list):
+        result["extracted_steps"] = [str(s) for s in extracted if s is not None]
+
+    return result

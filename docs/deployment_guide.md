@@ -104,12 +104,6 @@ aws ssm put-parameter \
   --value "your-service-role-key" \
   --type SecureString \
   --overwrite
-
-aws ssm put-parameter \
-  --name "/mathtutor/prod/FIREBASE_SERVICE_ACCOUNT" \
-  --value "$(cat path/to/serviceAccountKey.json)" \
-  --type SecureString \
-  --overwrite
 ```
 
 ---
@@ -145,12 +139,6 @@ cd frontend
 export VITE_API_URL=https://<APPRUNNER_SERVICE_URL>
 export VITE_SUPABASE_URL=https://your-project.supabase.co
 export VITE_SUPABASE_ANON_KEY=your-anon-key
-export VITE_FIREBASE_API_KEY=your-firebase-api-key
-export VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-export VITE_FIREBASE_PROJECT_ID=your-project-id
-export VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
-export VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-export VITE_FIREBASE_APP_ID=your-app-id
 
 npm ci
 npm run build
@@ -169,6 +157,7 @@ In your GitHub repository settings:
 
 **Secrets** (Settings > Secrets and variables > Actions > Secrets):
 - `AWS_ROLE_ARN` = the `github_actions_role_arn` output from Terraform
+- `VITE_SUPABASE_ANON_KEY` = your Supabase anon key
 
 **Variables** (Settings > Secrets and variables > Actions > Variables):
 - `S3_BUCKET_NAME` = the `s3_bucket_name` output
@@ -178,20 +167,13 @@ In your GitHub repository settings:
 - `APPRUNNER_ECR_ROLE_ARN` = from AWS console (the ECR access role)
 - `VITE_API_URL` = the `apprunner_service_url` output (with `https://`)
 - `VITE_SUPABASE_URL` = your Supabase project URL
-- `VITE_SUPABASE_ANON_KEY` = your Supabase anon key
-- `VITE_FIREBASE_API_KEY` = your Firebase API key
-- `VITE_FIREBASE_AUTH_DOMAIN` = your Firebase auth domain
-- `VITE_FIREBASE_PROJECT_ID` = your Firebase project ID
-- `VITE_FIREBASE_STORAGE_BUCKET` = your Firebase storage bucket
-- `VITE_FIREBASE_MESSAGING_SENDER_ID` = your Firebase sender ID
-- `VITE_FIREBASE_APP_ID` = your Firebase app ID
 
 ---
 
 ## Step 8: Smoke Test
 
 1. Open `https://<CLOUDFRONT_URL>` in browser
-2. Register / sign in via Firebase Auth
+2. Register / sign in (Supabase Auth: email/password or Google)
 3. Navigate to a course > section > problem
 4. Submit steps and verify AI evaluation returns feedback
 5. Check App Runner logs in AWS console for any errors

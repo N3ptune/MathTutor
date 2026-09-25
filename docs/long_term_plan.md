@@ -37,7 +37,7 @@ A checklist to track progress across all parts of the system (frontend, backend,
 ### Services & Utilities
 
 - [X] API service wrapper
-- [X] Firebase Auth integration
+- [X] Supabase Auth integration
 - [X] Reusable input components
 - [ ] Math formatting (MathJax/KaTeX)
 - [ ] Error boundaries & loading states
@@ -94,13 +94,13 @@ A checklist to track progress across all parts of the system (frontend, backend,
 
 ---
 
-## ☁️ Firebase Authentication
+## ☁️ Supabase Authentication
 
-- [ ] Configure Firebase project
-- [ ] Enable email/password auth
-- [ ] Connect Firebase to frontend
-- [ ] Validate Firebase tokens in backend middleware
-- [ ] Secure protected routes
+- [X] Configure Supabase Auth
+- [X] Enable email/password and Google auth
+- [X] Connect Supabase Auth to frontend
+- [X] Validate Supabase tokens in backend middleware
+- [X] Secure protected routes
 
 ---
 
@@ -138,10 +138,10 @@ A checklist to track progress across all parts of the system (frontend, backend,
 
 ## 🔐 Authentication & Authorization
 
-- [ ] Token validation middleware in backend
+- [X] Token validation middleware in backend
 - [ ] Role system (admin/user)
 - [ ] Permission levels for endpoints
-- [ ] Secure API routes with Firebase tokens
+- [X] Secure API routes with Supabase tokens
 
 ---
 

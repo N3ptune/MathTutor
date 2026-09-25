@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase.js";
 import { AuthState } from "../authState.jsx";
@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { X } from "lucide-react";
 import ProficiencyRing from "@/components/ProficiencyRing";
+import LoadingOverlay from "@/components/LoadingOverlay";
+import ErrorMessage from "@/components/ErrorMessage";
+import { friendlyError } from "@/lib/api";
+import { usePageLoad } from "@/lib/usePageLoad";
 
 // How many recent attempts to scan for distinct sections. Attempts can repeat a
 // section, so this needs to be generously larger than the 3 sections we display.
@@ -21,130 +25,116 @@ export default function Dashboard() {
   const [unregisteringId, setUnregisteringId] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!supabaseUser) return;
+  const [actionError, setActionError] = useState("");
 
-    async function fetchCourses() {
-      try {
-        const { data: enrollmentData, error: enrollError } = await supabase
-          .from("user_course")
-          .select("courseId")
-          .eq("userId", supabaseUser.userId);
+  const { loading, error: loadError, retry } = usePageLoad(async () => {
+    const { data: enrollmentData, error: enrollError } = await supabase
+      .from("user_course")
+      .select("courseId")
+      .eq("userId", supabaseUser.userId);
 
-        if (enrollError) throw enrollError;
+    if (enrollError) throw enrollError;
 
-        if (enrollmentData.length === 0) {
-          setCourses([]);
-          return;
-        }
+    const courseIds = (enrollmentData || []).map((e) => e.courseId);
 
-        const courseIds = enrollmentData.map((e) => e.courseId);
+    await Promise.all([
+      loadCourses(courseIds),
+      courseIds.length > 0 ? loadCourseProficiencies(courseIds) : setCourseProficiencies([]),
+      loadRecentSections(),
+    ]);
+  }, [supabaseUser], Boolean(supabaseUser));
 
-        const { data: courseData, error: courseError } = await supabase
-          .from("course")
-          .select("*")
-          .in("courseId", courseIds);
-
-        if (courseError) throw courseError;
-
-        setCourses(courseData);
-      } catch (err) {
-        console.error("Failed to fetch courses:", err);
-      }
+  async function loadCourses(courseIds) {
+    if (courseIds.length === 0) {
+      setCourses([]);
+      return;
     }
 
-    // One ring per enrolled class: the average across all of that class's sections
-    // (sections you haven't touched yet count as 0, so this reads as "% of the class mastered").
-    async function fetchCourseProficiencies() {
-      try {
-        const { data: enrollmentData } = await supabase
-          .from("user_course")
-          .select("courseId")
-          .eq("userId", supabaseUser.userId);
+    const { data: courseData, error: courseError } = await supabase
+      .from("course")
+      .select("*")
+      .in("courseId", courseIds);
 
-        const courseIds = (enrollmentData || []).map((e) => e.courseId);
-        if (courseIds.length === 0) {
-          setCourseProficiencies([]);
-          return;
-        }
+    if (courseError) throw courseError;
 
-        const { data: courseData } = await supabase
-          .from("course")
-          .select("courseId, name")
-          .in("courseId", courseIds);
+    setCourses(courseData);
+  }
 
-        const { data: sectionData } = await supabase
-          .from("section")
-          .select("sectionId, courseId")
-          .in("courseId", courseIds);
+  // One ring per enrolled class: the average across all of that class's sections
+  // (sections you haven't touched yet count as 0, so this reads as "% of the class mastered").
+  async function loadCourseProficiencies(courseIds) {
+    const { data: courseData, error: courseError } = await supabase
+      .from("course")
+      .select("courseId, name")
+      .in("courseId", courseIds);
 
-        const sectionIds = (sectionData || []).map((s) => s.sectionId);
+    if (courseError) throw courseError;
 
-        let profRows = [];
-        if (sectionIds.length > 0) {
-          const { data: profData } = await supabase
-            .from("proficiency")
-            .select("sectionId, rating")
-            .eq("userId", supabaseUser.userId)
-            .in("sectionId", sectionIds);
-          profRows = profData || [];
-        }
+    const { data: sectionData, error: sectionError } = await supabase
+      .from("section")
+      .select("sectionId, courseId")
+      .in("courseId", courseIds);
 
-        const ratingBySection = Object.fromEntries(profRows.map((p) => [p.sectionId, p.rating]));
+    if (sectionError) throw sectionError;
 
-        const results = (courseData || []).map((course) => {
-          const sections = (sectionData || []).filter((s) => s.courseId === course.courseId);
-          const rating = sections.length
-            ? sections.reduce((sum, s) => sum + (ratingBySection[s.sectionId] || 0), 0) / sections.length
-            : 0;
-          return { courseId: course.courseId, name: course.name, rating };
-        });
+    const sectionIds = (sectionData || []).map((s) => s.sectionId);
 
-        setCourseProficiencies(results);
-      } catch (err) {
-        console.error("Failed to fetch course proficiencies:", err);
-      }
+    let profRows = [];
+    if (sectionIds.length > 0) {
+      const { data: profData, error: profError } = await supabase
+        .from("proficiency")
+        .select("sectionId, rating")
+        .eq("userId", supabaseUser.userId)
+        .in("sectionId", sectionIds);
+
+      if (profError) throw profError;
+      profRows = profData || [];
     }
 
-    // The 3 sections this student most recently attempted a problem in, newest first.
-    async function fetchRecentSections() {
-      try {
-        const { data: attemptData, error } = await supabase
-          .from("user_problem_attempt")
-          .select("createdAt, problem(sectionId, section(sectionId, name, course(name)))")
-          .eq("userId", supabaseUser.userId)
-          .order("createdAt", { ascending: false })
-          .limit(RECENT_ATTEMPT_SCAN_LIMIT);
+    const ratingBySection = Object.fromEntries(profRows.map((p) => [p.sectionId, p.rating]));
 
-        if (error) throw error;
+    const results = (courseData || []).map((course) => {
+      const sections = (sectionData || []).filter((s) => s.courseId === course.courseId);
+      const rating = sections.length
+        ? sections.reduce((sum, s) => sum + (ratingBySection[s.sectionId] || 0), 0) / sections.length
+        : 0;
+      return { courseId: course.courseId, name: course.name, rating };
+    });
 
-        const seen = new Set();
-        const results = [];
-        for (const attempt of attemptData || []) {
-          const section = attempt.problem?.section;
-          if (!section || seen.has(section.sectionId)) continue;
-          seen.add(section.sectionId);
-          results.push({
-            sectionId: section.sectionId,
-            name: section.name,
-            courseName: section.course?.name || "",
-          });
-          if (results.length === RECENT_SECTIONS_SHOWN) break;
-        }
+    setCourseProficiencies(results);
+  }
 
-        setRecentSections(results);
-      } catch (err) {
-        console.error("Failed to fetch recent activity:", err);
-      }
+  // The 3 sections this student most recently attempted a problem in, newest first.
+  async function loadRecentSections() {
+    const { data: attemptData, error } = await supabase
+      .from("user_problem_attempt")
+      .select("createdAt, problem(sectionId, section(sectionId, name, course(name)))")
+      .eq("userId", supabaseUser.userId)
+      .order("createdAt", { ascending: false })
+      .limit(RECENT_ATTEMPT_SCAN_LIMIT);
+
+    if (error) throw error;
+
+    const seen = new Set();
+    const results = [];
+    for (const attempt of attemptData || []) {
+      const section = attempt.problem?.section;
+      if (!section || seen.has(section.sectionId)) continue;
+      seen.add(section.sectionId);
+      results.push({
+        sectionId: section.sectionId,
+        name: section.name,
+        courseName: section.course?.name || "",
+      });
+      if (results.length === RECENT_SECTIONS_SHOWN) break;
     }
 
-    fetchCourses();
-    fetchCourseProficiencies();
-    fetchRecentSections();
-  }, [supabaseUser]);
+    setRecentSections(results);
+  }
 
   async function handleUnregister(courseId) {
     setUnregisteringId(courseId);
+    setActionError("");
     try {
       const { error } = await supabase
         .from("user_course")
@@ -157,21 +147,25 @@ export default function Dashboard() {
       setCourseProficiencies((prev) => prev.filter((cp) => cp.courseId !== courseId));
     } catch (err) {
       console.error("Failed to unregister from class:", err);
-      alert("Unregistering failed: " + err.message);
+      setActionError(`Unregistering failed. ${friendlyError(err)}`);
     } finally {
       setUnregisteringId(null);
     }
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-6 py-10 flex flex-col gap-12">
+    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col gap-10 sm:gap-12">
+      <LoadingOverlay show={loading} message="Loading your dashboard..." />
+      <LoadingOverlay show={unregisteringId !== null} message="Unregistering..." />
 
       {/* Header Section */}
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-primary">
+        <h1 className="text-3xl sm:text-4xl font-bold text-primary break-words">
           Welcome, {supabaseUser?.firstName || "Student"}
         </h1>
       </div>
+
+      {loadError && <ErrorMessage message={loadError} onRetry={retry} />}
 
       {/* Progress Section */}
       <section>
@@ -242,12 +236,14 @@ export default function Dashboard() {
 
       {/* Classes Section */}
       <section>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <h2 className="text-2xl font-semibold">Your Classes</h2>
-          <Button variant="outline" onClick={() => navigate("/register")}>
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate("/register")}>
             Register for a Class
           </Button>
         </div>
+
+        <ErrorMessage message={actionError} className="mb-4" />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {courses.length > 0 ? (

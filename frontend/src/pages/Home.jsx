@@ -17,6 +17,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import LoadingOverlay from "@/components/LoadingOverlay";
+import ErrorMessage from "@/components/ErrorMessage";
+import { friendlyError } from "@/lib/api";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -34,55 +37,86 @@ export default function Home() {
   const [regPassword, setRegPassword] = useState("");
   const [regConfirm, setRegConfirm] = useState("");
 
+  const [busyMessage, setBusyMessage] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [registerError, setRegisterError] = useState("");
+
   useEffect(() => {
     if (user) navigate("/dashboard");
   }, [user, navigate]);
 
+  // Supabase explains bad credentials itself; anything else gets the standard friendly message
+  function authErrorMessage(err) {
+    return err?.name === "AuthApiError" && err.message ? err.message : friendlyError(err);
+  }
+
   async function handleLoginEmail() {
+    if (!loginEmail.trim() || !loginPassword) {
+      setLoginError("Please enter your email and password.");
+      return;
+    }
+
+    setLoginError("");
+    setBusyMessage("Signing in...");
     try {
-      await loginEmailPassword(loginEmail, loginPassword);
+      await loginEmailPassword(loginEmail.trim(), loginPassword);
       setShowLogin(false);
     } catch (err) {
       console.error(err);
-      alert("Login failed: " + err.message);
+      setLoginError(`Login failed. ${authErrorMessage(err)}`);
+    } finally {
+      setBusyMessage("");
     }
   }
 
   async function handleRegisterEmail() {
     if (!regFirstName.trim() || !regLastName.trim()) {
-      alert("Please enter your first and last name.");
+      setRegisterError("Please enter your first and last name.");
+      return;
+    }
+
+    if (!regEmail.trim() || !regPassword) {
+      setRegisterError("Please enter an email and password.");
       return;
     }
 
     if (regPassword !== regConfirm) {
-      alert("Passwords do not match!");
+      setRegisterError("Passwords do not match.");
       return;
     }
 
+    setRegisterError("");
+    setBusyMessage("Creating your account...");
     try {
-      await registerEmailPassword(regEmail, regPassword, regFirstName, regLastName);
+      await registerEmailPassword(regEmail.trim(), regPassword, regFirstName.trim(), regLastName.trim());
       setShowRegister(false);
     } catch (err) {
       console.error(err);
-      alert("Registration failed: " + err.message);
+      setRegisterError(`Registration failed. ${authErrorMessage(err)}`);
+    } finally {
+      setBusyMessage("");
     }
   }
 
   async function handleGoogleLogin() {
+    const setError = showRegister ? setRegisterError : setLoginError;
+    setError("");
+    // Google sign-in navigates away, so the overlay stays up until the redirect happens
+    setBusyMessage("Redirecting to Google...");
     try {
       await loginWithGoogle();
-      setShowLogin(false);
-      setShowRegister(false);
     } catch (err) {
       console.error(err);
-      alert("Google login failed: " + err.message);
+      setError(`Google sign-in failed. ${authErrorMessage(err)}`);
+      setBusyMessage("");
     }
   }
 
   return (
-    <div className="relative w-full min-h-screen bg-background overflow-hidden flex flex-col items-center justify-center">
+    <div className="relative w-full min-h-screen bg-background overflow-hidden flex flex-col items-center justify-center px-4 text-center">
+      <LoadingOverlay show={Boolean(busyMessage)} message={busyMessage} />
       <motion.h1
-        className="text-5xl font-bold text-primary mb-4 z-10"
+        className="text-4xl sm:text-5xl font-bold text-primary mb-4 z-10"
         initial={{ opacity: 0, y: -40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1 }}
@@ -91,7 +125,7 @@ export default function Home() {
       </motion.h1>
 
       <motion.h2
-        className="text-2xl text-foreground mb-10 z-10"
+        className="text-xl sm:text-2xl text-foreground mb-10 z-10"
         initial={{ opacity: 0, y: -40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, delay: 0.2 }}
@@ -100,7 +134,7 @@ export default function Home() {
       </motion.h2>
 
       {!user && (
-        <div className="flex gap-4 z-10">
+        <div className="flex flex-col sm:flex-row gap-4 z-10 w-full max-w-xs sm:w-auto sm:max-w-none">
           <Button size="lg" onClick={() => setShowLogin(true)}>
             Sign In
           </Button>
@@ -112,7 +146,7 @@ export default function Home() {
 
       {/* LOGIN DIALOG */}
       <Dialog open={showLogin} onOpenChange={setShowLogin}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Sign In</DialogTitle>
             <DialogDescription>Enter your credentials to continue.</DialogDescription>
@@ -138,6 +172,7 @@ export default function Home() {
                 onChange={(e) => setLoginPassword(e.target.value)}
               />
             </div>
+            <ErrorMessage message={loginError} />
             <Button onClick={handleLoginEmail}>Sign In</Button>
             <div className="relative my-2">
               <div className="absolute inset-0 flex items-center">
@@ -154,13 +189,13 @@ export default function Home() {
 
       {/* REGISTER DIALOG */}
       <Dialog open={showRegister} onOpenChange={setShowRegister}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Account</DialogTitle>
             <DialogDescription>Fill in your details to get started.</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="reg-first-name">First Name</Label>
                 <Input
@@ -212,6 +247,7 @@ export default function Home() {
                 onChange={(e) => setRegConfirm(e.target.value)}
               />
             </div>
+            <ErrorMessage message={registerError} />
             <Button onClick={handleRegisterEmail}>Register</Button>
             <div className="relative my-2">
               <div className="absolute inset-0 flex items-center">
