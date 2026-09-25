@@ -63,8 +63,8 @@ CREATE TABLE user_problem_attempt (
     createdAt TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- A user's current proficiency for a section. rating is a rolling score from recent practice,
--- capped below 100 until the section's proficiency exam is passed (examPassed).
+-- A user's current proficiency for a section. rating is the share of the section's course
+-- problems answered correctly, scaled to at most 95 until the section's exam is passed (examPassed).
 CREATE TABLE proficiency (
     proficiencyId BIGSERIAL PRIMARY KEY,
     userId BIGINT NOT NULL REFERENCES users(userId) ON DELETE CASCADE,

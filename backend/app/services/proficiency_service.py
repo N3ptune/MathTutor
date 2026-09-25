@@ -2,8 +2,6 @@ from app.config import SUPABASE_URL, SUPABASE_ANON_KEY
 from app.services.supabase_service import _user_headers
 import httpx
 
-# How many recent attempts feed the rolling proficiency score, most recent weighted highest
-RECENT_ATTEMPT_WINDOW = 10
 # Practice alone can only push proficiency this high; passing the section's exam unlocks 100
 PRACTICE_RATING_CAP = 95.0
 
@@ -60,17 +58,25 @@ async def _get_proficiency_row(user_id: int, section_id: int, access_token: str)
     return data[0] if data else None
 
 
-async def _get_recent_attempt_ratings(user_id: int, section_id: int, access_token: str) -> list[float]:
+async def _count_section_course_problems(section_id: int, access_token: str) -> int:
+    url = f"{SUPABASE_URL}/rest/v1/problem?sectionId=eq.{section_id}&source=eq.course&select=problemId"
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, headers=_user_headers(access_token))
+    resp.raise_for_status()
+    return len(resp.json())
+
+
+async def _get_correctly_solved_course_problem_ids(user_id: int, section_id: int, access_token: str) -> set[int]:
     # user_problem_attempt has no sectionId of its own, so filter through the embedded problem
     url = (
         f"{SUPABASE_URL}/rest/v1/user_problem_attempt"
-        f"?userId=eq.{user_id}&select=proficiencyRating,createdAt,problem!inner(sectionId)"
-        f"&problem.sectionId=eq.{section_id}&order=createdAt.desc&limit={RECENT_ATTEMPT_WINDOW}"
+        f"?userId=eq.{user_id}&isCorrect=is.true&select=problemId,problem!inner(sectionId,source)"
+        f"&problem.sectionId=eq.{section_id}&problem.source=eq.course"
     )
     async with httpx.AsyncClient() as client:
         resp = await client.get(url, headers=_user_headers(access_token))
     resp.raise_for_status()
-    return [row["proficiencyRating"] for row in resp.json()]
+    return {row["problemId"] for row in resp.json()}
 
 
 async def _upsert_proficiency(user_id: int, section_id: int, rating: float, exam_passed: bool, access_token: str) -> dict:
@@ -88,7 +94,8 @@ async def _upsert_proficiency(user_id: int, section_id: int, rating: float, exam
 
 
 async def recompute_section_proficiency(user_id: int, section_id: int, access_token: str) -> dict:
-    """Recomputes a user's section proficiency from their recent attempt ratings.
+    """Recomputes a user's section proficiency as the share of the section's course problems
+    they have answered correctly, scaled so practice alone tops out at PRACTICE_RATING_CAP.
     Once the section's exam has been passed, proficiency stays locked at 100."""
     existing = await _get_proficiency_row(user_id, section_id, access_token)
     exam_passed = bool(existing and existing.get("examPassed"))
@@ -96,16 +103,11 @@ async def recompute_section_proficiency(user_id: int, section_id: int, access_to
     if exam_passed:
         return await _upsert_proficiency(user_id, section_id, 100.0, True, access_token)
 
-    ratings = await _get_recent_attempt_ratings(user_id, section_id, access_token)
-    if ratings:
-        # Ratings arrive most-recent-first; weight recent attempts higher.
-        weights = list(range(len(ratings), 0, -1))
-        rating = sum(r * w for r, w in zip(ratings, weights)) / sum(weights)
-    else:
-        rating = 0.0
+    total = await _count_section_course_problems(section_id, access_token)
+    solved = await _get_correctly_solved_course_problem_ids(user_id, section_id, access_token)
+    rating = (len(solved) / total) * PRACTICE_RATING_CAP if total else 0.0
 
-    rating = min(rating, PRACTICE_RATING_CAP)
-    return await _upsert_proficiency(user_id, section_id, rating, False, access_token)
+    return await _upsert_proficiency(user_id, section_id, min(rating, PRACTICE_RATING_CAP), False, access_token)
 
 
 async def record_and_update_proficiency(user_id: int, problem_id: int, evaluation_result: dict, access_token: str) -> None:
