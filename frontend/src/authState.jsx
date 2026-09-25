@@ -1,6 +1,7 @@
 // authState.jsx
 import { createContext, useState, useEffect } from "react";
 import { supabase } from "./supabase";
+import { isClockSkewed } from "./lib/clock";
 
 export const AuthState = createContext(null);
 
@@ -77,6 +78,8 @@ export function AuthProvider({ children }) {
   // True when signed in but the app user row couldn't be loaded (e.g. offline)
   const [appUserFailed, setAppUserFailed] = useState(false);
   const [syncAttempt, setSyncAttempt] = useState(0);
+  // Sticky for the page's lifetime: once detected, the resulting sign-out shouldn't hide it
+  const [clockSkewed, setClockSkewed] = useState(false);
 
   useEffect(() => {
     async function handleSession(session) {
@@ -103,7 +106,11 @@ export function AuthProvider({ children }) {
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only freshly issued tokens say anything about the clock; restored ones can be old
+      if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.access_token) {
+        if (isClockSkewed(session.access_token)) setClockSkewed(true);
+      }
       handleSession(session);
     });
 
@@ -113,7 +120,7 @@ export function AuthProvider({ children }) {
   const retryAppUser = () => setSyncAttempt((n) => n + 1);
 
   return (
-    <AuthState.Provider value={{ user, supabaseUser, setSupabaseUser, appUserFailed, retryAppUser }}>
+    <AuthState.Provider value={{ user, supabaseUser, setSupabaseUser, appUserFailed, retryAppUser, clockSkewed }}>
       {children}
     </AuthState.Provider>
   );

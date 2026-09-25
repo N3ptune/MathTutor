@@ -17,16 +17,26 @@ import Terms from './pages/legal/Terms.jsx'
 import Privacy from './pages/legal/Privacy.jsx'
 import Refunds from './pages/legal/Refunds.jsx'
 import Footer from './components/Footer.jsx'
+import ErrorMessage from './components/ErrorMessage.jsx'
 
 function AppContent() {
   const location = useLocation();
-  const { user } = useContext(AuthState);
+  const { user, clockSkewed } = useContext(AuthState);
   const isHomePage = location.pathname === '/';
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       {/* Legal pages are public, so only show the app menu to signed-in users */}
       {!isHomePage && user && <Navbar />}
+
+      {clockSkewed && (
+        <div className="max-w-3xl w-full mx-auto px-4 pt-4">
+          <ErrorMessage
+            message="Your device's clock is wrong, so sign-in can't stay active. Turn on automatic date, time, and time zone in your device settings, then sign in again."
+            onRetry={() => window.location.reload()}
+          />
+        </div>
+      )}
 
       <main className="flex-1 flex flex-col">
 
