@@ -2,7 +2,7 @@ import time
 from collections import defaultdict, deque
 
 import httpx
-from fastapi import Header, HTTPException
+from fastapi import Depends, Header, HTTPException
 
 from app.config import SUPABASE_URL, SUPABASE_ANON_KEY
 
@@ -47,3 +47,15 @@ async def require_user(authorization: str | None = Header(default=None)) -> dict
     # Kept so Supabase requests can run as this user and be checked by RLS
     user["access_token"] = token
     return user
+
+
+async def require_ai_quota(user: dict = Depends(require_user)) -> dict:
+    """For endpoints that call OpenAI: the signed-in user, plus their app user id and plan.
+    Rejects with 402 once they've used this month's AI actions."""
+    # Imported here so this module stays importable without the service layer (and its config)
+    from app.services.proficiency_service import get_app_user_id
+    from app.services.usage_service import check_quota
+
+    app_user_id = await get_app_user_id(user["access_token"], user["id"])
+    plan = await check_quota(app_user_id)
+    return {**user, "app_user_id": app_user_id, "plan": plan}

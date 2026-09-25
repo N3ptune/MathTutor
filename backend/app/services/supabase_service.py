@@ -1,4 +1,4 @@
-from app.config import SUPABASE_URL, SUPABASE_ANON_KEY
+from app.config import SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, is_configured
 import httpx
 
 # Requests to Supabase carry the signed-in user's token, so row-level security applies to them
@@ -6,6 +6,17 @@ def _user_headers(access_token: str) -> dict:
     return {
         "apikey": SUPABASE_ANON_KEY,
         "Authorization": f"Bearer {access_token}",
+    }
+
+
+# Bypasses row-level security. Only for tables users must not write themselves
+# (subscription, ai_usage) and for admin actions like deleting an account.
+def _service_headers() -> dict:
+    if not is_configured(SUPABASE_SERVICE_ROLE_KEY):
+        raise RuntimeError("SUPABASE_SERVICE_ROLE_KEY is not set")
+    return {
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
     }
 
 # Queries supabase to find the problem text

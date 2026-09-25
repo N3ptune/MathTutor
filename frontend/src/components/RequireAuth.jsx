@@ -3,6 +3,8 @@ import { AuthState } from "../authState";
 import { Navigate } from "react-router-dom";
 import LoadingOverlay from "./LoadingOverlay";
 import ErrorMessage from "./ErrorMessage";
+import ConsentGate from "./ConsentGate";
+import { needsConsent } from "@/lib/consent";
 
 // Just a check to hide things unless user is logged in and authorized.
 // Waits for both the auth session and the app's user row before showing the page.
@@ -27,6 +29,10 @@ export default function RequireAuth({ children }) {
 
   if (!supabaseUser) {
     return <LoadingOverlay show message="Loading your account..." />;
+  }
+
+  if (needsConsent(supabaseUser)) {
+    return <ConsentGate />;
   }
 
   return children;

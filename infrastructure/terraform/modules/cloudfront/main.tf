@@ -10,6 +10,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   default_root_object = "index.html"
   price_class         = "PriceClass_100"
   comment             = "${var.name_prefix} frontend"
+  aliases             = var.domain_names
 
   origin {
     domain_name              = var.s3_bucket_regional
@@ -49,7 +50,10 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = length(var.domain_names) == 0
+    acm_certificate_arn            = length(var.domain_names) > 0 ? var.certificate_arn : null
+    ssl_support_method             = length(var.domain_names) > 0 ? "sni-only" : null
+    minimum_protocol_version       = length(var.domain_names) > 0 ? "TLSv1.2_2021" : null
   }
 
   tags = {
@@ -64,8 +68,8 @@ resource "aws_s3_bucket_policy" "frontend" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "AllowCloudFrontServicePrincipal"
-        Effect    = "Allow"
+        Sid    = "AllowCloudFrontServicePrincipal"
+        Effect = "Allow"
         Principal = {
           Service = "cloudfront.amazonaws.com"
         }

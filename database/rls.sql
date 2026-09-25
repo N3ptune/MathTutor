@@ -65,10 +65,11 @@ create policy "problem: read" on public.problem
   for select to authenticated
   using (source = 'course' or "createdBy" = public.current_app_user_id());
 
--- The backend inserts generated problems using the caller's token, so signed-in users
--- need insert on problem. Tighten later by moving generation to a service-role key.
+-- The backend inserts a student's generated practice problems using their token. Shared
+-- course problems are added only by the service role (scripts/top_up_course_problems.py).
 create policy "problem: insert" on public.problem
-  for insert to authenticated with check (true);
+  for insert to authenticated
+  with check (source = 'user' and "createdBy" = public.current_app_user_id());
 
 -- ---------------------------------------------------------------------------
 -- user_course (enrollments): you can only see and create your own.

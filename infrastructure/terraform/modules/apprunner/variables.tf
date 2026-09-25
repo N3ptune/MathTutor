@@ -25,3 +25,13 @@ variable "cloudfront_url" {
   description = "CloudFront domain for CORS allowed origins"
   type        = string
 }
+
+variable "frontend_domain_names" {
+  description = "Custom frontend domains, allowed for CORS alongside CloudFront"
+  type        = list(string)
+  default     = []
+}
+
+variable "environment" {
+  type = string
+}

@@ -34,7 +34,8 @@ export async function registerEmailPassword(email, password, firstName, lastName
     },
   });
   if (error) throw error;
-  return { user: data.user };
+  // With email confirmation on, there's no session until they click the link in their inbox
+  return { user: data.user, needsConfirmation: !data.session };
 }
 
 export async function loginWithGoogle() {
@@ -47,5 +48,18 @@ export async function loginWithGoogle() {
 
 export async function logout() {
   const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}
+
+// Emails a link back to /reset-password, where the student sets a new password
+export async function requestPasswordReset(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (error) throw error;
+}
+
+export async function updatePassword(password) {
+  const { error } = await supabase.auth.updateUser({ password });
   if (error) throw error;
 }

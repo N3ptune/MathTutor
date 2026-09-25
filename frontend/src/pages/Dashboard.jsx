@@ -9,7 +9,7 @@ import { X } from "lucide-react";
 import ProficiencyRing from "@/components/ProficiencyRing";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import ErrorMessage from "@/components/ErrorMessage";
-import { friendlyError } from "@/lib/api";
+import { apiFetch, friendlyError } from "@/lib/api";
 import { usePageLoad } from "@/lib/usePageLoad";
 
 // How many recent attempts to scan for distinct sections. Attempts can repeat a
@@ -26,6 +26,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const [actionError, setActionError] = useState("");
+  const [billing, setBilling] = useState(null);
 
   const { loading, error: loadError, retry } = usePageLoad(async () => {
     const { data: enrollmentData, error: enrollError } = await supabase
@@ -41,6 +42,7 @@ export default function Dashboard() {
       loadCourses(courseIds),
       courseIds.length > 0 ? loadCourseProficiencies(courseIds) : setCourseProficiencies([]),
       loadRecentSections(),
+      loadBilling(),
     ]);
   }, [supabaseUser], Boolean(supabaseUser));
 
@@ -102,6 +104,16 @@ export default function Dashboard() {
     });
 
     setCourseProficiencies(results);
+  }
+
+  // Usage is a nice-to-have here; the dashboard still works if the backend is unreachable
+  async function loadBilling() {
+    try {
+      setBilling(await apiFetch("/api/billing/status", { method: "GET" }));
+    } catch (err) {
+      console.error("Failed to load plan usage:", err);
+      setBilling(null);
+    }
   }
 
   // The 3 sections this student most recently attempted a problem in, newest first.
@@ -222,11 +234,26 @@ export default function Dashboard() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader>
-              <CardTitle>Time Spent</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between gap-4">
+              <CardTitle>AI Checks</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/account")}>
+                {billing?.plan === "pro" ? "Manage" : "Upgrade"}
+              </Button>
             </CardHeader>
-            <CardContent className="flex items-center justify-center h-32 text-muted-foreground">
-              Coming soon
+            <CardContent className="flex flex-col justify-center gap-2 min-h-32 py-4">
+              {billing ? (
+                <>
+                  <p className="text-3xl font-bold">
+                    {Math.max(billing.actionsLimit - billing.actionsUsed, 0)}
+                    <span className="text-base font-normal text-muted-foreground"> left this month</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {billing.planLabel} plan: {billing.actionsUsed} of {billing.actionsLimit} used
+                  </p>
+                </>
+              ) : (
+                <p className="text-muted-foreground text-center">Usage unavailable right now.</p>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -3,7 +3,7 @@ name: Backend Deploy
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - "backend/**"
       - ".github/workflows/backend-deploy.yml"
@@ -15,9 +15,18 @@ permissions:
 env:
   AWS_REGION: us-east-1
 
+# Shared with the Terraform workflow so a push touching both never updates App Runner twice at once
+concurrency:
+  group: apprunner-${{ github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   deploy:
     name: Build and Deploy Backend
+    needs: ci
     runs-on: ubuntu-latest
 
     steps:
@@ -27,7 +36,7 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ github.ref_name == 'staging' && secrets.STAGING_AWS_ROLE_ARN || github.ref_name != 'staging' && secrets.AWS_ROLE_ARN || '' }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
@@ -38,7 +47,7 @@ jobs:
         working-directory: backend
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY_NAME }}
+          ECR_REPOSITORY: ${{ github.ref_name == 'staging' && vars.STAGING_ECR_REPOSITORY_NAME || github.ref_name != 'staging' && vars.ECR_REPOSITORY_NAME || '' }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
@@ -56,7 +65,7 @@ jobs:
       # so wait (up to 20 minutes) for the service to be RUNNING first.
       - name: Deploy to App Runner
         env:
-          SERVICE_ARN: ${{ vars.APPRUNNER_SERVICE_ARN }}
+          SERVICE_ARN: ${{ github.ref_name == 'staging' && vars.STAGING_APPRUNNER_SERVICE_ARN || github.ref_name != 'staging' && vars.APPRUNNER_SERVICE_ARN || '' }}
         run: |
           for i in $(seq 1 80); do
             status=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query Service.Status --output text)

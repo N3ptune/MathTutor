@@ -4,7 +4,7 @@ import random
 
 import httpx
 
-from app.config import SUPABASE_URL
+from app.config import SUPABASE_URL, GRADING_REASONING_EFFORT
 from app.services.ai_service import send_ai_request
 from app.services.supabase_service import get_section_name, _user_headers
 from app.services.proficiency_service import (
@@ -37,7 +37,7 @@ Return only JSON in this format:
 }}
 """
     messages = [{"role": "user", "content": prompt}]
-    raw_response = await send_ai_request(messages)
+    raw_response = await send_ai_request(messages, effort="low")
     data = json.loads(raw_response)
 
     url = f"{SUPABASE_URL}/rest/v1/proficiency_exam_question"
@@ -101,7 +101,7 @@ Return only JSON in this format:
 {{"is_correct": true, "feedback": "one or two sentences"}}
 """
     messages = [{"role": "user", "content": prompt}]
-    raw_response = await send_ai_request(messages)
+    raw_response = await send_ai_request(messages, effort=GRADING_REASONING_EFFORT)
     return json.loads(raw_response)
 
 

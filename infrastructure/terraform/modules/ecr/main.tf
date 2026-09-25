@@ -1,5 +1,6 @@
 resource "aws_ecr_repository" "backend" {
-  name                 = "${var.project_name}-backend"
+  # prod keeps its original name so the existing repository isn't replaced
+  name                 = var.environment == "prod" ? "${var.project_name}-backend" : "${var.name_prefix}-backend"
   image_tag_mutability = "MUTABLE"
   force_delete         = false
 

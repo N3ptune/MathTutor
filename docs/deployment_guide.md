@@ -61,7 +61,7 @@ Edit `terraform.tfvars` and set your `github_repo` to your actual GitHub `owner/
 
 ```bash
 cd infrastructure/terraform
-terraform init
+terraform init -backend-config="key=prod/terraform.tfstate"
 terraform plan
 terraform apply
 ```
@@ -105,6 +105,8 @@ aws ssm put-parameter \
   --type SecureString \
   --overwrite
 ```
+
+Terraform also creates `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`, and `SENTRY_DSN` as `PLACEHOLDER`. The app runs without them, with billing and error reporting turned off. Set them when you're ready; see [launch_checklist.md](launch_checklist.md).
 
 ---
 

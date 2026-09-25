@@ -1,3 +1,8 @@
+output "frontend_url" {
+  description = "Public URL of the frontend (custom domain if set)"
+  value       = module.apprunner.frontend_url
+}
+
 output "cloudfront_distribution_url" {
   description = "CloudFront distribution URL for the frontend"
   value       = "https://${module.cloudfront.distribution_domain_name}"

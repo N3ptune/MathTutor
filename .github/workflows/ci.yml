@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
+  # The deploy workflows call this first, so nothing ships without passing it
+  workflow_call:
 
 permissions:
   contents: read
@@ -34,7 +34,7 @@ jobs:
         run: pip install -r requirements-dev.txt
 
       - name: Lint
-        run: flake8 app tests
+        run: flake8 app tests evals scripts
 
       - name: Test
         run: pytest -q

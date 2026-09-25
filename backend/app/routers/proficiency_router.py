@@ -1,10 +1,11 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from app.auth import require_user
-from app.services.proficiency_service import get_app_user_id
+from app.auth import require_ai_quota
+from app.services.proficiency_service import EXAM_QUESTIONS_PER_ATTEMPT
+from app.services.usage_service import metered
 from app.workers.proficiency_exam_worker import start_exam_attempt, submit_exam_attempt
 
 logger = logging.getLogger(__name__)
@@ -18,30 +19,32 @@ class ExamStartRequest(BaseModel):
 
 class ExamAnswer(BaseModel):
     examQuestionId: int
-    answer: str
+    answer: str = Field(max_length=2000)
 
 
 class ExamSubmitRequest(BaseModel):
     examAttemptId: int
-    answers: list[ExamAnswer]
+    # Each answer is its own AI grading call, so cap it at the size of a real exam
+    answers: list[ExamAnswer] = Field(max_length=EXAM_QUESTIONS_PER_ATTEMPT)
 
 
 @router.post("/exam/start")
-async def exam_start(body: ExamStartRequest, user: dict = Depends(require_user)):
+async def exam_start(body: ExamStartRequest, user: dict = Depends(require_ai_quota)):
     try:
-        app_user_id = await get_app_user_id(user["access_token"], user["id"])
-        return await start_exam_attempt(app_user_id, body.sectionId, user["access_token"])
+        # Only costs an action when the section's question bank has to be generated
+        async with metered(user["app_user_id"], "exam_start"):
+            return await start_exam_attempt(user["app_user_id"], body.sectionId, user["access_token"])
     except Exception:
         logger.exception("Failed to start proficiency exam")
         raise HTTPException(status_code=500, detail="Couldn't start the exam right now. Please try again.")
 
 
 @router.post("/exam/submit")
-async def exam_submit(body: ExamSubmitRequest, user: dict = Depends(require_user)):
+async def exam_submit(body: ExamSubmitRequest, user: dict = Depends(require_ai_quota)):
     try:
-        app_user_id = await get_app_user_id(user["access_token"], user["id"])
         answers = [a.model_dump() for a in body.answers]
-        return await submit_exam_attempt(app_user_id, body.examAttemptId, answers, user["access_token"])
+        async with metered(user["app_user_id"], "exam_submit"):
+            return await submit_exam_attempt(user["app_user_id"], body.examAttemptId, answers, user["access_token"])
     except Exception:
         logger.exception("Failed to submit proficiency exam")
         raise HTTPException(status_code=500, detail="Couldn't grade the exam right now. Please try again.")

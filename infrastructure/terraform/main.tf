@@ -16,6 +16,7 @@ module "ecr" {
   source       = "./modules/ecr"
   name_prefix  = local.name_prefix
   project_name = var.project_name
+  environment  = var.environment
 }
 
 module "s3_frontend" {
@@ -29,6 +30,8 @@ module "cloudfront" {
   s3_bucket_arn      = module.s3_frontend.bucket_arn
   s3_bucket_regional = module.s3_frontend.bucket_regional_domain_name
   name_prefix        = local.name_prefix
+  domain_names       = var.frontend_domain_names
+  certificate_arn    = var.frontend_certificate_arn
 }
 
 module "apprunner" {
@@ -39,15 +42,19 @@ module "apprunner" {
   ssm_parameter_arn_map = module.ssm.parameter_arn_map
   ssm_prefix            = module.ssm.parameter_prefix
   cloudfront_url        = module.cloudfront.distribution_domain_name
+  frontend_domain_names = var.frontend_domain_names
+  environment           = var.environment
 }
 
 module "iam" {
-  source                  = "./modules/iam"
-  name_prefix             = local.name_prefix
-  environment             = var.environment
-  github_repo             = var.github_repo
-  s3_bucket_arn           = module.s3_frontend.bucket_arn
+  source                      = "./modules/iam"
+  name_prefix                 = local.name_prefix
+  environment                 = var.environment
+  github_repo                 = var.github_repo
+  s3_bucket_arn               = module.s3_frontend.bucket_arn
   cloudfront_distribution_arn = module.cloudfront.distribution_arn
-  ecr_repository_arn      = module.ecr.repository_arn
-  apprunner_service_arn   = module.apprunner.service_arn
+  ecr_repository_arn          = module.ecr.repository_arn
+  apprunner_service_arn       = module.apprunner.service_arn
+  deploy_branch               = var.deploy_branch
+  create_oidc_provider        = var.create_github_oidc_provider
 }

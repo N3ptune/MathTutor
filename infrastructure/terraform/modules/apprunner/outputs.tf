@@ -7,3 +7,7 @@ output "service_arn" {
   description = "App Runner service ARN"
   value       = aws_apprunner_service.backend.arn
 }
+
+output "frontend_url" {
+  value = local.frontend_origins[0]
+}

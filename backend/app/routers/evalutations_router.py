@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
-from app.auth import require_user
+from app.auth import require_ai_quota
 from typing import Optional
 from pydantic import BaseModel
 import json
 import logging
 from app.workers.evaluation_worker import evaluate_steps
 from app.services.document_service import parse_upload, UnsupportedUpload, MAX_UPLOAD_BYTES
-from app.services.proficiency_service import get_app_user_id, record_and_update_proficiency
+from app.services.proficiency_service import record_and_update_proficiency
+from app.services.usage_service import metered
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,8 @@ class EvaluateResponse(BaseModel):
     step_correct: list[Optional[bool]] = []
     all_correct: bool = False
     extracted_steps: Optional[list[str]] = None
+    # Lets the student report this grade as wrong; None if saving the attempt failed
+    attempt_id: Optional[int] = None
 
 
 def clean_steps(raw: str) -> list[str]:
@@ -47,7 +50,7 @@ async def evaluate(
     problemId: int = Form(...),
     steps: str = Form(...),
     image: Optional[UploadFile] = File(None),
-    user: dict = Depends(require_user),
+    user: dict = Depends(require_ai_quota),
 ):
     try:
         parsed_steps = clean_steps(steps)
@@ -66,11 +69,15 @@ async def evaluate(
             image_base64_list = upload.images_base64
             document_text = upload.text
 
-        result = await evaluate_steps(problemId, parsed_steps, image_base64_list, document_text, user["access_token"])
+        async with metered(user["app_user_id"], "evaluate"):
+            result = await evaluate_steps(
+                problemId, parsed_steps, image_base64_list, document_text, user["access_token"]
+            )
 
         try:
-            app_user_id = await get_app_user_id(user["access_token"], user["id"])
-            await record_and_update_proficiency(app_user_id, problemId, result, parsed_steps, user["access_token"])
+            result["attempt_id"] = await record_and_update_proficiency(
+                user["app_user_id"], problemId, result, parsed_steps, user["access_token"]
+            )
         except Exception:
             # Proficiency bookkeeping is best-effort; a student's feedback shouldn't be
             # blocked by it failing.

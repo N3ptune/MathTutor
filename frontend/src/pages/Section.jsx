@@ -9,7 +9,8 @@ import ProficiencyRing from "@/components/ProficiencyRing";
 import MathText from "@/components/MathText";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import ErrorMessage from "@/components/ErrorMessage";
-import { apiFetch, friendlyError } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
+import { useApiError } from "@/lib/useApiError";
 import { usePageLoad } from "@/lib/usePageLoad";
 
 export default function Section() {
@@ -19,7 +20,7 @@ export default function Section() {
   const [courseId, setCourseId] = useState(null); // store courseId
   const [sectionName, setSectionName] = useState("");
   const [generatingPersonal, setGeneratingPersonal] = useState(false);
-  const [generateError, setGenerateError] = useState("");
+  const generateError = useApiError();
   const [proficiency, setProficiency] = useState(null);
   const navigate = useNavigate();
 
@@ -68,7 +69,7 @@ export default function Section() {
     }
 
     setGeneratingPersonal(true);
-    setGenerateError("");
+    generateError.clear();
     try {
       const data = await apiFetch("/api/problem_generation/generate/", {
         body: new URLSearchParams({
@@ -82,7 +83,7 @@ export default function Section() {
       setProblems((prev) => [...prev, data.problem]);
     } catch (err) {
       console.error("Failed to generate problem:", err);
-      setGenerateError(friendlyError(err));
+      generateError.setError(err);
     } finally {
       setGeneratingPersonal(false);
     }
@@ -157,7 +158,12 @@ export default function Section() {
           ))}
         </div>
 
-        <ErrorMessage message={generateError} onRetry={generatePersonalProblem} className="mb-4" />
+        <ErrorMessage
+          message={generateError.message}
+          action={generateError.action}
+          onRetry={generatePersonalProblem}
+          className="mb-4"
+        />
 
         {courseId && (
           <Button

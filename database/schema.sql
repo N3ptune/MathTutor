@@ -1,4 +1,7 @@
 -- Drop tables if they exist
+DROP TABLE IF EXISTS grade_report;
+DROP TABLE IF EXISTS ai_usage;
+DROP TABLE IF EXISTS subscription;
 DROP TABLE IF EXISTS proficiency_exam_response;
 DROP TABLE IF EXISTS proficiency_exam_attempt;
 DROP TABLE IF EXISTS proficiency_exam_question;
@@ -16,7 +19,10 @@ CREATE TABLE users (
     firstName TEXT DEFAULT '',
     lastName TEXT DEFAULT '',
     email TEXT NOT NULL UNIQUE,
-    auth_uid TEXT UNIQUE -- Supabase auth UID
+    auth_uid TEXT UNIQUE, -- Supabase auth UID
+    -- When they agreed to the Terms/Privacy Policy (and confirmed being 13+), and to which version
+    termsAcceptedAt TIMESTAMPTZ,
+    termsVersion TEXT
 );
 
 -- Courses table
@@ -106,4 +112,41 @@ CREATE TABLE proficiency_exam_response (
     studentAnswer TEXT,
     isCorrect BOOLEAN,
     aiFeedback TEXT
+);
+
+-- Cache of each user's Stripe subscription, written only by the backend's webhook
+CREATE TABLE subscription (
+    userId BIGINT PRIMARY KEY REFERENCES users(userId) ON DELETE CASCADE,
+    stripeCustomerId TEXT UNIQUE,
+    stripeSubscriptionId TEXT UNIQUE,
+    status TEXT,
+    currentPeriodEnd TIMESTAMPTZ,
+    cancelAtPeriodEnd BOOLEAN NOT NULL DEFAULT false,
+    updatedAt TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- One row per request that called OpenAI; monthly quotas count these
+CREATE TABLE ai_usage (
+    usageId BIGSERIAL PRIMARY KEY,
+    userId BIGINT NOT NULL REFERENCES users(userId) ON DELETE CASCADE,
+    action TEXT NOT NULL,
+    model TEXT NOT NULL,
+    calls INTEGER NOT NULL DEFAULT 1,
+    inputTokens INTEGER NOT NULL DEFAULT 0,
+    cachedTokens INTEGER NOT NULL DEFAULT 0,
+    outputTokens INTEGER NOT NULL DEFAULT 0,
+    reasoningTokens INTEGER NOT NULL DEFAULT 0,
+    costUsd NUMERIC(12, 6) NOT NULL DEFAULT 0,
+    createdAt TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- A student flagging an AI grade as wrong
+CREATE TABLE grade_report (
+    reportId BIGSERIAL PRIMARY KEY,
+    userId BIGINT NOT NULL REFERENCES users(userId) ON DELETE CASCADE,
+    attemptId BIGINT NOT NULL REFERENCES user_problem_attempt(attemptId) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open',
+    createdAt TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (userId, attemptId)
 );

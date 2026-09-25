@@ -2,6 +2,8 @@ import openai
 import json
 import asyncio
 
+from app.services.usage_service import record_model_usage
+
 _client = None
 
 def _get_client() -> openai.OpenAI:
@@ -12,15 +14,22 @@ def _get_client() -> openai.OpenAI:
 
 # Takes in the messages from the router
 # Sends a message to ai of choice and returns the response
-# returns first choice in case of split choices to ensure an option is always picked and nothing hangs
-async def send_ai_request(messages: list[dict], use_vision: bool = False) -> str:
+# Hidden reasoning tokens are billed as output and are most of the cost, so tasks that don't
+# need careful judgment (writing problems) run at "low" effort. Grading stays at the default.
+async def send_ai_request(messages: list[dict], use_vision: bool = False, effort: str = "medium") -> str:
+    model = "gpt-5" if use_vision else "gpt-5-mini"
+
     def call_openai():
-        response = _get_client().responses.create(
-            model = "gpt-5" if use_vision else "gpt-5-mini",
-            input = messages
+        return _get_client().responses.create(
+            model=model,
+            input=messages,
+            reasoning={"effort": effort},
         )
-        return response.output_text
-    return await asyncio.to_thread(call_openai)
+
+    response = await asyncio.to_thread(call_openai)
+    # Reports tokens to the usage meter for billing; a no-op outside a metered request
+    record_model_usage(model, getattr(response, "usage", None))
+    return response.output_text
 
 
 

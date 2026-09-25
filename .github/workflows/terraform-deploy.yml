@@ -3,9 +3,10 @@ name: Terraform Deploy
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - "infrastructure/terraform/**"
+      - ".github/workflows/terraform-deploy.yml"
 
 permissions:
   id-token: write
@@ -14,6 +15,12 @@ permissions:
 env:
   AWS_REGION: us-east-1
   TF_WORKING_DIR: infrastructure/terraform
+  ENVIRONMENT: ${{ github.ref_name == 'staging' && 'staging' || 'prod' }}
+
+# Shared with the backend workflow so they never update App Runner at the same time
+concurrency:
+  group: apprunner-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -30,7 +37,7 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ github.ref_name == 'staging' && secrets.STAGING_AWS_ROLE_ARN || github.ref_name != 'staging' && secrets.AWS_ROLE_ARN || '' }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
@@ -39,10 +46,19 @@ jobs:
           terraform_version: "~> 1.5"
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -input=false -backend-config="key=${{ env.ENVIRONMENT }}/terraform.tfstate"
 
       - name: Terraform Plan
-        run: terraform plan -var="github_repo=${{ github.repository }}" -out=tfplan
+        env:
+          # Optional custom domain: a JSON list like ["mathtutor.com","www.mathtutor.com"] and its ACM cert
+          TF_VAR_frontend_domain_names: ${{ github.ref_name == 'staging' && vars.STAGING_TF_FRONTEND_DOMAIN_NAMES || github.ref_name != 'staging' && vars.TF_FRONTEND_DOMAIN_NAMES || '[]' }}
+          TF_VAR_frontend_certificate_arn: ${{ github.ref_name == 'staging' && vars.STAGING_TF_FRONTEND_CERTIFICATE_ARN || github.ref_name != 'staging' && vars.TF_FRONTEND_CERTIFICATE_ARN || '' }}
+        run: >-
+          terraform plan -input=false -out=tfplan
+          -var="github_repo=${{ github.repository }}"
+          -var="environment=${{ env.ENVIRONMENT }}"
+          -var="deploy_branch=${{ env.ENVIRONMENT == 'prod' && 'main' || 'staging' }}"
+          -var="create_github_oidc_provider=${{ env.ENVIRONMENT == 'prod' }}"
 
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan

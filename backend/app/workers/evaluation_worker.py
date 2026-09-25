@@ -1,5 +1,6 @@
 from app.services.supabase_service import get_problem_text
 from app.services.ai_service import send_ai_request
+from app.config import GRADING_REASONING_EFFORT
 
 import json
 
@@ -23,6 +24,12 @@ LATEX_INSTRUCTIONS = (
 # Then it takes the response grabbed from the api, and turns that into feedback per step, which it returns to the frontend to be thrown up
 async def evaluate_steps(problemId: int, steps: list[str], image_base64_list: list[str] | None = None, document_text: str = "", access_token: str = ""):
     problem_text = await get_problem_text(problemId, access_token)
+    return await grade_solution(problem_text, steps, image_base64_list, document_text)
+
+
+# Grades a solution against the problem text. Split out from evaluate_steps so the
+# grading-accuracy evals (backend/evals) can run it without a database.
+async def grade_solution(problem_text: str, steps: list[str], image_base64_list: list[str] | None = None, document_text: str = "") -> dict:
 
     # If it's an uploaded solution (image, or PDF with extracted text)
     if image_base64_list or document_text:
@@ -125,7 +132,7 @@ Problem:
 
     messages = [{"role": "user", "content": content}]
 
-    raw_response = await send_ai_request(messages)
+    raw_response = await send_ai_request(messages, effort=GRADING_REASONING_EFFORT)
 
     return normalize_evaluation(json.loads(raw_response))
 

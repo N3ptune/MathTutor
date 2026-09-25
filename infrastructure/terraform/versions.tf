@@ -9,8 +9,10 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "mathtutor-terraform-state"
-    key            = "prod/terraform.tfstate"
+    bucket = "mathtutor-terraform-state"
+    # key is set per environment at init time:
+    #   terraform init -backend-config="key=prod/terraform.tfstate"
+    #   terraform init -backend-config="key=staging/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "mathtutor-terraform-locks"
     encrypt        = true

@@ -37,6 +37,6 @@ Respond ONLY with valid JSON in this format:
         }
     ]
 
-    raw_response = await send_ai_request(messages)
+    raw_response = await send_ai_request(messages, effort="low")
     course_structure = parse_ai_course_structure(raw_response)
     return course_structure

@@ -27,3 +27,14 @@ variable "environment" {
   description = "Deployment environment (e.g. prod)"
   type        = string
 }
+
+variable "deploy_branch" {
+  description = "Branch whose workflow runs may assume the deploy role"
+  type        = string
+  default     = "main"
+}
+
+variable "create_oidc_provider" {
+  type    = bool
+  default = true
+}

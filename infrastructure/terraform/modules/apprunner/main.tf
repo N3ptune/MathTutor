@@ -1,9 +1,16 @@
 locals {
-  cpu             = "1024"  # 1 vCPU (smallest)
-  memory          = "2048"  # 2 GB  (smallest practical for Python + sympy)
+  cpu             = "1024" # 1 vCPU (smallest)
+  memory          = "2048" # 2 GB  (smallest practical for Python + sympy)
   max_concurrency = 100
   max_size        = 2
   min_size        = 1
+}
+
+locals {
+  frontend_origins = concat(
+    [for domain in var.frontend_domain_names : "https://${domain}"],
+    ["https://${var.cloudfront_url}"],
+  )
 }
 
 data "aws_region" "current" {}
@@ -121,8 +128,11 @@ resource "aws_apprunner_service" "backend" {
         port = "8000"
 
         runtime_environment_variables = {
-          ALLOWED_ORIGINS = "https://${var.cloudfront_url}"
-          SSM_PREFIX      = var.ssm_prefix
+          ALLOWED_ORIGINS = join(",", local.frontend_origins)
+          # The first origin is the public one (custom domain when set)
+          FRONTEND_URL = local.frontend_origins[0]
+          ENVIRONMENT  = var.environment
+          SSM_PREFIX   = var.ssm_prefix
         }
 
         runtime_environment_secrets = var.ssm_parameter_arn_map

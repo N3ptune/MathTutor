@@ -9,7 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import ProficiencyRing from "@/components/ProficiencyRing";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import ErrorMessage from "@/components/ErrorMessage";
-import { apiFetch, friendlyError } from "@/lib/api";
+import { apiFetch, isQuotaError } from "@/lib/api";
+import { useApiError } from "@/lib/useApiError";
 import { usePageLoad } from "@/lib/usePageLoad";
 import { ArrowLeft } from "lucide-react";
 
@@ -23,10 +24,10 @@ export default function ProficiencyExam() {
   const [answers, setAnswers] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
-  const [submitError, setSubmitError] = useState("");
+  const submitError = useApiError();
 
   // Starting an exam samples fresh questions, so a retry after a failure is safe
-  const { loading: starting, error: startError, retry } = usePageLoad(async () => {
+  const { loading: starting, error: startError, cause: startCause, retry } = usePageLoad(async () => {
     const data = await apiFetch("/api/proficiency/exam/start", { json: { sectionId: Number(sectionId) } });
     setExamAttemptId(data.examAttemptId);
     setQuestions(data.questions);
@@ -38,7 +39,7 @@ export default function ProficiencyExam() {
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    setSubmitError("");
+    submitError.clear();
     try {
       const data = await apiFetch("/api/proficiency/exam/submit", {
         json: {
@@ -52,7 +53,7 @@ export default function ProficiencyExam() {
       setResult(data);
     } catch (err) {
       console.error("Failed to submit exam:", err);
-      setSubmitError(friendlyError(err));
+      submitError.setError(err);
     } finally {
       setSubmitting(false);
     }
@@ -73,7 +74,12 @@ export default function ProficiencyExam() {
       </div>
       <h1 className="text-2xl font-bold mb-6">Proficiency Exam</h1>
 
-      <ErrorMessage message={startError} onRetry={retry} className="mb-4" />
+      <ErrorMessage
+        message={startError}
+        onRetry={retry}
+        action={isQuotaError(startCause) ? { label: "See plans", onClick: () => navigate("/account") } : undefined}
+        className="mb-4"
+      />
 
       {!starting && result && (
         <Card className="w-full mb-8">
@@ -130,7 +136,7 @@ export default function ProficiencyExam() {
 
       {!starting && !result && questions.length > 0 && (
         <div className="w-full flex flex-col items-center gap-3">
-          <ErrorMessage message={submitError} onRetry={handleSubmit} />
+          <ErrorMessage message={submitError.message} action={submitError.action} onRetry={handleSubmit} />
           <Button size="lg" className="w-full sm:w-auto" onClick={handleSubmit} disabled={submitting}>
             Submit Exam
           </Button>

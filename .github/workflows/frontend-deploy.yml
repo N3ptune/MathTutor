@@ -3,7 +3,7 @@ name: Frontend Deploy
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-deploy.yml"
@@ -16,8 +16,12 @@ env:
   AWS_REGION: us-east-1
 
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   deploy:
     name: Build and Deploy Frontend
+    needs: ci
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -30,7 +34,7 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ github.ref_name == 'staging' && secrets.STAGING_AWS_ROLE_ARN || github.ref_name != 'staging' && secrets.AWS_ROLE_ARN || '' }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Node.js
@@ -45,16 +49,22 @@ jobs:
 
       - name: Build
         env:
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_API_URL: ${{ github.ref_name == 'staging' && vars.STAGING_VITE_API_URL || github.ref_name != 'staging' && vars.VITE_API_URL || '' }}
+          VITE_SUPABASE_URL: ${{ github.ref_name == 'staging' && vars.STAGING_VITE_SUPABASE_URL || github.ref_name != 'staging' && vars.VITE_SUPABASE_URL || '' }}
+          VITE_SUPABASE_ANON_KEY: ${{ github.ref_name == 'staging' && secrets.STAGING_VITE_SUPABASE_ANON_KEY || github.ref_name != 'staging' && secrets.VITE_SUPABASE_ANON_KEY || '' }}
+          VITE_SENTRY_DSN: ${{ github.ref_name == 'staging' && vars.STAGING_VITE_SENTRY_DSN || github.ref_name != 'staging' && vars.VITE_SENTRY_DSN || '' }}
+          VITE_ENVIRONMENT: ${{ github.ref_name == 'staging' && 'staging' || 'production' }}
+          # Same for every environment
+          VITE_SUPPORT_EMAIL: ${{ vars.VITE_SUPPORT_EMAIL }}
+          VITE_LEGAL_ENTITY: ${{ vars.VITE_LEGAL_ENTITY }}
+          VITE_GOVERNING_LAW: ${{ vars.VITE_GOVERNING_LAW }}
         run: npm run build
 
       - name: Sync to S3
-        run: aws s3 sync dist/ s3://${{ vars.S3_BUCKET_NAME }} --delete
+        run: aws s3 sync dist/ s3://${{ github.ref_name == 'staging' && vars.STAGING_S3_BUCKET_NAME || github.ref_name != 'staging' && vars.S3_BUCKET_NAME || '' }} --delete
 
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --distribution-id ${{ github.ref_name == 'staging' && vars.STAGING_CLOUDFRONT_DISTRIBUTION_ID || github.ref_name != 'staging' && vars.CLOUDFRONT_DISTRIBUTION_ID || '' }} \
             --paths "/*"

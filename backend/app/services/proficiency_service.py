@@ -1,6 +1,10 @@
 from app.config import SUPABASE_URL
 from app.services.supabase_service import _user_headers
+import logging
+
 import httpx
+
+logger = logging.getLogger(__name__)
 
 # Practice alone can only push proficiency this high; passing the section's exam unlocks 100
 PRACTICE_RATING_CAP = 95.0
@@ -32,13 +36,14 @@ async def get_problem_section_id(problem_id: int, access_token: str) -> int:
     return data[0]["sectionId"]
 
 
-async def record_problem_attempt(user_id: int, problem_id: int, attempt: dict, access_token: str) -> None:
+async def record_problem_attempt(user_id: int, problem_id: int, attempt: dict, access_token: str) -> int:
     url = f"{SUPABASE_URL}/rest/v1/user_problem_attempt"
-    headers = {**_user_headers(access_token), "Content-Type": "application/json"}
+    headers = {**_user_headers(access_token), "Content-Type": "application/json", "Prefer": "return=representation"}
     payload = {"userId": user_id, "problemId": problem_id, **attempt}
     async with httpx.AsyncClient() as client:
         resp = await client.post(url, headers=headers, json=payload)
     resp.raise_for_status()
+    return resp.json()[0]["attemptId"]
 
 
 async def _get_proficiency_row(user_id: int, section_id: int, access_token: str) -> dict | None:
@@ -120,11 +125,17 @@ def build_attempt_record(evaluation_result: dict, submitted_steps: list[str]) ->
 
 async def record_and_update_proficiency(
     user_id: int, problem_id: int, evaluation_result: dict, submitted_steps: list[str], access_token: str
-) -> None:
+) -> int:
+    """Saves the attempt, updates the section's proficiency, and returns the new attemptId."""
     attempt = build_attempt_record(evaluation_result, submitted_steps)
-    await record_problem_attempt(user_id, problem_id, attempt, access_token)
-    section_id = await get_problem_section_id(problem_id, access_token)
-    await recompute_section_proficiency(user_id, section_id, access_token)
+    attempt_id = await record_problem_attempt(user_id, problem_id, attempt, access_token)
+    try:
+        section_id = await get_problem_section_id(problem_id, access_token)
+        await recompute_section_proficiency(user_id, section_id, access_token)
+    except Exception:
+        # The attempt is saved; a stale score fixes itself on the next graded attempt
+        logger.exception("Failed to update proficiency after attempt %s", attempt_id)
+    return attempt_id
 
 
 async def mark_exam_passed(user_id: int, section_id: int, access_token: str) -> dict:

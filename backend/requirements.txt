@@ -10,3 +10,5 @@ pymupdf
 pillow
 aiohttp
 python-multipart
+stripe>=15,<16
+sentry-sdk[fastapi]>=2,<3

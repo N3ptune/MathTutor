@@ -27,6 +27,11 @@ function isNetworkFailure(err) {
   return /failed to fetch|networkerror|load failed|network request failed/i.test(message);
 }
 
+// The backend answers 402 when the student has used this month's AI actions
+export function isQuotaError(err) {
+  return err instanceof ApiError && err.status === 402;
+}
+
 // Turns any thrown error into a sentence that is safe and useful to show a student.
 export function friendlyError(err) {
   if (typeof navigator !== "undefined" && navigator.onLine === false) return OFFLINE_MESSAGE;

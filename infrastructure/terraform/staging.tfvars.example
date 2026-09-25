@@ -1,0 +1,12 @@
+# Staging: a separate copy of the stack for testing changes before they reach prod.
+# terraform init -reconfigure -backend-config="key=staging/terraform.tfstate"
+# terraform apply -var-file=staging.tfvars
+aws_region   = "us-east-1"
+project_name = "mathtutor"
+environment  = "staging"
+
+github_repo   = "your-username/MathTutor"
+deploy_branch = "staging"
+
+# prod already created the account-wide GitHub OIDC provider
+create_github_oidc_provider = false

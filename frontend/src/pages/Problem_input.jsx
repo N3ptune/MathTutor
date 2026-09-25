@@ -11,7 +11,9 @@ import LoadingOverlay from "@/components/LoadingOverlay";
 import ErrorMessage from "@/components/ErrorMessage";
 import StepFeedback, { ResultBanner } from "@/components/StepFeedback";
 import AttemptHistory from "@/components/AttemptHistory";
-import { apiFetch, friendlyError } from "@/lib/api";
+import ReportGradeButton from "@/components/ReportGradeButton";
+import { apiFetch } from "@/lib/api";
+import { useApiError } from "@/lib/useApiError";
 import { usePageLoad } from "@/lib/usePageLoad";
 import { canSubmitSteps, nonBlankSteps } from "@/lib/steps";
 import { ArrowLeft, X } from "lucide-react";
@@ -39,7 +41,8 @@ export default function ProblemInput() {
   const [stepCorrect, setStepCorrect] = useState([]);
   const [allCorrect, setAllCorrect] = useState(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
-  const [submitError, setSubmitError] = useState("");
+  const [attemptId, setAttemptId] = useState(null);
+  const submitError = useApiError();
   const [imageFile, setImageFile] = useState(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [attempts, setAttempts] = useState([]);
@@ -74,6 +77,7 @@ export default function ProblemInput() {
     setFeedback([]);
     setStepCorrect([]);
     setAllCorrect(null);
+    setAttemptId(null);
   };
 
   const updateStep = (index, value) => {
@@ -109,7 +113,7 @@ export default function ProblemInput() {
     if (!canSubmit || isEvaluating) return;
 
     setIsEvaluating(true);
-    setSubmitError("");
+    submitError.clear();
 
     const submittedSteps = nonBlankSteps(steps);
 
@@ -128,6 +132,7 @@ export default function ProblemInput() {
       setFeedback(data.feedback || []);
       setStepCorrect(data.step_correct || []);
       setAllCorrect(Boolean(data.all_correct));
+      setAttemptId(data.attempt_id ?? null);
 
       try {
         setAttempts(await fetchAttempts(supabaseUser.userId, problemId));
@@ -138,7 +143,7 @@ export default function ProblemInput() {
       }
     } catch (err) {
       console.error("Evaluation error:", err);
-      setSubmitError(friendlyError(err));
+      submitError.setError(err);
     } finally {
       setIsEvaluating(false);
     }
@@ -236,7 +241,12 @@ export default function ProblemInput() {
           {/* Result + Submit */}
           <div className="w-full flex flex-col items-center gap-3 mb-10">
             {allCorrect !== null && <ResultBanner allCorrect={allCorrect} />}
-            <ErrorMessage message={submitError} onRetry={canSubmit ? handleSubmit : undefined} />
+            {allCorrect !== null && <ReportGradeButton key={attemptId} attemptId={attemptId} />}
+            <ErrorMessage
+              message={submitError.message}
+              action={submitError.action}
+              onRetry={canSubmit ? handleSubmit : undefined}
+            />
             <Button
               size="lg"
               className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"

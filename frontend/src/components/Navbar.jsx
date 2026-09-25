@@ -52,6 +52,14 @@ export default function Navbar() {
               </SheetClose>
               <SheetClose asChild>
                 <Link
+                  to="/account"
+                  className="text-foreground font-medium text-base hover:text-primary transition-colors py-2"
+                >
+                  Account &amp; Billing
+                </Link>
+              </SheetClose>
+              <SheetClose asChild>
+                <Link
                   to="/register"
                   className="text-foreground font-medium text-base hover:text-primary transition-colors py-2"
                 >

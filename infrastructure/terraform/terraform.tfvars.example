@@ -4,3 +4,12 @@ environment  = "prod"
 
 # Your GitHub repo in owner/repo format
 github_repo = "your-username/MathTutor"
+
+# Branch allowed to deploy this environment
+deploy_branch = "main"
+
+# Custom domain (optional). Request a certificate for these names in ACM in us-east-1,
+# validate it via DNS, then paste its ARN here. Point the domain's DNS at the CloudFront
+# distribution (a CNAME, or an ALIAS/ANAME record for the bare domain).
+# frontend_domain_names    = ["mathtutor.example", "www.mathtutor.example"]
+# frontend_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/..."

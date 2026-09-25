@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import MathText from "@/components/MathText";
 import StepFeedback from "@/components/StepFeedback";
+import ReportGradeButton from "@/components/ReportGradeButton";
 
 function formatDate(iso) {
   return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
@@ -51,6 +52,7 @@ function AttemptRow({ attempt, number }) {
             // Attempts from before step history was saved only have the combined feedback
             <StepFeedback text={attempt.aiFeedback || "No feedback was saved for this attempt."} correct={null} />
           )}
+          <ReportGradeButton attemptId={attempt.attemptId} />
         </div>
       )}
     </li>
