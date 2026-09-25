@@ -43,6 +43,7 @@ export default function ProblemInput() {
   const [imageFile, setImageFile] = useState(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [attempts, setAttempts] = useState([]);
+  const [historyError, setHistoryError] = useState("");
 
   const { loading, error: loadError, retry } = usePageLoad(async () => {
     const { data, error } = await supabase
@@ -53,7 +54,14 @@ export default function ProblemInput() {
 
     if (error) throw error;
     setProblemText(data.problem);
-    setAttempts(await fetchAttempts(supabaseUser.userId, problemId));
+
+    try {
+      setAttempts(await fetchAttempts(supabaseUser.userId, problemId));
+    } catch (err) {
+      // History is secondary; the student can still solve the problem without it
+      console.error("Failed to load attempt history:", err);
+      setHistoryError("Couldn't load your previous attempts.");
+    }
   }, [problemId, supabaseUser], Boolean(supabaseUser));
 
   const canSubmit = canSubmitSteps(steps, imageFile);
@@ -123,6 +131,7 @@ export default function ProblemInput() {
 
       try {
         setAttempts(await fetchAttempts(supabaseUser.userId, problemId));
+        setHistoryError("");
       } catch (err) {
         // The grade is already on screen; a stale history list isn't worth an error
         console.error("Failed to refresh attempt history:", err);
@@ -243,7 +252,11 @@ export default function ProblemInput() {
             )}
           </div>
 
-          <AttemptHistory attempts={attempts} />
+          {historyError ? (
+            <ErrorMessage message={historyError} />
+          ) : (
+            <AttemptHistory attempts={attempts} />
+          )}
         </>
       )}
     </div>
