@@ -50,6 +50,30 @@ jobs:
       # existing config. update-service with the same image tag can be a no-op,
       # and passing --source-configuration replaces the whole block, which drops
       # the runtime env vars and SSM secrets Terraform set (ALLOWED_ORIGINS, keys).
+      #
+      # App Runner rejects a deployment while another operation is in progress,
+      # e.g. when the Terraform workflow is updating the service from the same push,
+      # so wait (up to 20 minutes) for the service to be RUNNING first.
       - name: Deploy to App Runner
+        env:
+          SERVICE_ARN: ${{ vars.APPRUNNER_SERVICE_ARN }}
         run: |
-          aws apprunner start-deployment --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}"
+          for i in $(seq 1 80); do
+            status=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query Service.Status --output text)
+            case "$status" in
+              RUNNING)
+                aws apprunner start-deployment --service-arn "$SERVICE_ARN"
+                exit 0
+                ;;
+              OPERATION_IN_PROGRESS)
+                echo "Service is busy with another operation; waiting... ($i/80)"
+                sleep 15
+                ;;
+              *)
+                echo "::error::App Runner service is $status, not RUNNING. Check the service in the AWS console."
+                exit 1
+                ;;
+            esac
+          done
+          echo "::error::Timed out waiting for the App Runner service to become RUNNING."
+          exit 1
