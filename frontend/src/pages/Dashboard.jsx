@@ -2,15 +2,23 @@ import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase.js";
 import { AuthState } from "../authState.jsx";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardAction, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { X } from "lucide-react";
 import ProficiencyRing from "@/components/ProficiencyRing";
+
+// How many recent attempts to scan for distinct sections. Attempts can repeat a
+// section, so this needs to be generously larger than the 3 sections we display.
+const RECENT_ATTEMPT_SCAN_LIMIT = 20;
+const RECENT_SECTIONS_SHOWN = 3;
 
 export default function Dashboard() {
   const { supabaseUser } = useContext(AuthState);
   const [courses, setCourses] = useState([]);
   const [courseProficiencies, setCourseProficiencies] = useState([]);
+  const [recentSections, setRecentSections] = useState([]);
+  const [unregisteringId, setUnregisteringId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -98,9 +106,62 @@ export default function Dashboard() {
       }
     }
 
+    // The 3 sections this student most recently attempted a problem in, newest first.
+    async function fetchRecentSections() {
+      try {
+        const { data: attemptData, error } = await supabase
+          .from("user_problem_attempt")
+          .select("createdAt, problem(sectionId, section(sectionId, name, course(name)))")
+          .eq("userId", supabaseUser.userId)
+          .order("createdAt", { ascending: false })
+          .limit(RECENT_ATTEMPT_SCAN_LIMIT);
+
+        if (error) throw error;
+
+        const seen = new Set();
+        const results = [];
+        for (const attempt of attemptData || []) {
+          const section = attempt.problem?.section;
+          if (!section || seen.has(section.sectionId)) continue;
+          seen.add(section.sectionId);
+          results.push({
+            sectionId: section.sectionId,
+            name: section.name,
+            courseName: section.course?.name || "",
+          });
+          if (results.length === RECENT_SECTIONS_SHOWN) break;
+        }
+
+        setRecentSections(results);
+      } catch (err) {
+        console.error("Failed to fetch recent activity:", err);
+      }
+    }
+
     fetchCourses();
     fetchCourseProficiencies();
+    fetchRecentSections();
   }, [supabaseUser]);
+
+  async function handleUnregister(courseId) {
+    setUnregisteringId(courseId);
+    try {
+      const { error } = await supabase
+        .from("user_course")
+        .delete()
+        .eq("userId", supabaseUser.userId)
+        .eq("courseId", courseId);
+
+      if (error) throw error;
+      setCourses((prev) => prev.filter((c) => c.courseId !== courseId));
+      setCourseProficiencies((prev) => prev.filter((cp) => cp.courseId !== courseId));
+    } catch (err) {
+      console.error("Failed to unregister from class:", err);
+      alert("Unregistering failed: " + err.message);
+    } finally {
+      setUnregisteringId(null);
+    }
+  }
 
   return (
     <div className="w-full max-w-6xl mx-auto px-6 py-10 flex flex-col gap-12">
@@ -108,7 +169,7 @@ export default function Dashboard() {
       {/* Header Section */}
       <div className="text-center">
         <h1 className="text-4xl font-bold text-primary">
-          Welcome, {supabaseUser?.email || "Student"}
+          Welcome, {supabaseUser?.firstName || "Student"}
         </h1>
       </div>
 
@@ -147,8 +208,23 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
-            <CardContent className="flex items-center justify-center h-32 text-muted-foreground">
-              Coming soon
+            <CardContent className="flex flex-col justify-center gap-2 min-h-32 py-4">
+              {recentSections.length === 0 ? (
+                <p className="text-muted-foreground text-center">No recent activity yet.</p>
+              ) : (
+                recentSections.map((section) => (
+                  <button
+                    key={section.sectionId}
+                    onClick={() => navigate(`/section/${section.sectionId}`)}
+                    className="flex flex-col items-start text-left w-full rounded-md border px-3 py-2 hover:bg-accent transition-colors cursor-pointer"
+                  >
+                    <span className="font-medium">{section.name}</span>
+                    {section.courseName && (
+                      <span className="text-xs text-muted-foreground">{section.courseName}</span>
+                    )}
+                  </button>
+                ))
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -179,6 +255,18 @@ export default function Dashboard() {
               <Card key={course.courseId}>
                 <CardHeader>
                   <CardTitle>{course.name}</CardTitle>
+                  <CardAction>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 text-muted-foreground hover:text-destructive"
+                      disabled={unregisteringId === course.courseId}
+                      onClick={() => handleUnregister(course.courseId)}
+                      aria-label={`Unregister from ${course.name}`}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </CardAction>
                 </CardHeader>
                 <CardContent>
                   <Button

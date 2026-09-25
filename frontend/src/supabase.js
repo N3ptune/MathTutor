@@ -19,10 +19,19 @@ export async function loginEmailPassword(email, password) {
   return { user: data.user };
 }
 
-export async function registerEmailPassword(email, password) {
+export async function registerEmailPassword(email, password, firstName, lastName) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      // Stored the same way Google's OAuth profile data arrives, so syncAppUser
+      // in authState.jsx can read it identically regardless of how someone signed up.
+      data: {
+        first_name: firstName,
+        last_name: lastName,
+        full_name: `${firstName} ${lastName}`.trim(),
+      },
+    },
   });
   if (error) throw error;
   return { user: data.user };

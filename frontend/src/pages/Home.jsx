@@ -28,6 +28,8 @@ export default function Home() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
+  const [regFirstName, setRegFirstName] = useState("");
+  const [regLastName, setRegLastName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirm, setRegConfirm] = useState("");
@@ -47,13 +49,18 @@ export default function Home() {
   }
 
   async function handleRegisterEmail() {
+    if (!regFirstName.trim() || !regLastName.trim()) {
+      alert("Please enter your first and last name.");
+      return;
+    }
+
     if (regPassword !== regConfirm) {
       alert("Passwords do not match!");
       return;
     }
 
     try {
-      await registerEmailPassword(regEmail, regPassword);
+      await registerEmailPassword(regEmail, regPassword, regFirstName, regLastName);
       setShowRegister(false);
     } catch (err) {
       console.error(err);
@@ -153,6 +160,28 @@ export default function Home() {
             <DialogDescription>Fill in your details to get started.</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="reg-first-name">First Name</Label>
+                <Input
+                  id="reg-first-name"
+                  type="text"
+                  placeholder="First Name"
+                  value={regFirstName}
+                  onChange={(e) => setRegFirstName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg-last-name">Last Name</Label>
+                <Input
+                  id="reg-last-name"
+                  type="text"
+                  placeholder="Last Name"
+                  value={regLastName}
+                  onChange={(e) => setRegLastName(e.target.value)}
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="reg-email">Email</Label>
               <Input
