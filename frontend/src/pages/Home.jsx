@@ -139,9 +139,13 @@ export default function Home() {
     if (user) navigate("/dashboard");
   }, [user, navigate]);
 
-  // Footer links point at /#pricing; scroll there once the page has rendered
+  // Footer links point at /#pricing; scroll there once the page has rendered. Only plain
+  // anchors: after Google sign-in the hash holds tokens (#access_token=...), which aren't a
+  // valid CSS selector and would throw.
   useEffect(() => {
-    if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
+    if (/^#[A-Za-z][\w-]*$/.test(location.hash)) {
+      document.getElementById(location.hash.slice(1))?.scrollIntoView();
+    }
   }, [location.hash]);
 
   // Supabase explains bad credentials itself; anything else gets the standard friendly message

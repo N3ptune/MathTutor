@@ -1,5 +1,8 @@
+import { useContext } from "react";
 import { Link } from "react-router-dom";
+import { UserCircle } from "lucide-react";
 import { logout } from "../supabase";
+import { AuthState } from "../authState";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -13,6 +16,8 @@ import {
 } from "@/components/ui/sheet";
 
 export default function Navbar() {
+  const { supabaseUser } = useContext(AuthState);
+
   function handleLogout() {
     logout().catch((err) => console.error("Logout failed:", err));
   }
@@ -79,6 +84,17 @@ export default function Navbar() {
         </Sheet>
 
         <h1 className="text-xl font-bold">Math Tutor</h1>
+
+        <Button
+          variant="ghost"
+          className="ml-auto text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+          asChild
+        >
+          <Link to="/account" aria-label="Your account">
+            <UserCircle className="size-5" />
+            <span className="hidden sm:inline max-w-40 truncate">{supabaseUser?.firstName || "Account"}</span>
+          </Link>
+        </Button>
       </div>
     </>
   );

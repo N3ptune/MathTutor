@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Check } from "lucide-react";
 import { AuthState } from "../authState";
-import { logout, updatePassword } from "../supabase";
+import { logout, supabase, updatePassword } from "../supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -54,7 +54,10 @@ const PRO_FEATURES = [
 export default function Account() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, supabaseUser } = useContext(AuthState);
+  const { user, supabaseUser, setSupabaseUser } = useContext(AuthState);
+  const [firstName, setFirstName] = useState(supabaseUser?.firstName || "");
+  const [lastName, setLastName] = useState(supabaseUser?.lastName || "");
+  const [nameMessage, setNameMessage] = useState({ type: "", text: "" });
 
   const [status, setStatus] = useState(null);
   const [busyMessage, setBusyMessage] = useState("");
@@ -113,6 +116,30 @@ export default function Account() {
     } catch (err) {
       console.error("Billing redirect failed:", err);
       setBillingError(friendlyError(err));
+      setBusyMessage("");
+    }
+  }
+
+  async function saveName() {
+    if (!firstName.trim()) {
+      setNameMessage({ type: "error", text: "Enter your first name." });
+      return;
+    }
+    setBusyMessage("Saving...");
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .update({ firstName: firstName.trim(), lastName: lastName.trim() })
+        .eq("userId", supabaseUser.userId)
+        .select()
+        .single();
+      if (error) throw error;
+      setSupabaseUser(data);
+      setNameMessage({ type: "success", text: "Name updated." });
+    } catch (err) {
+      console.error("Name update failed:", err);
+      setNameMessage({ type: "error", text: friendlyError(err) });
+    } finally {
       setBusyMessage("");
     }
   }
@@ -271,15 +298,49 @@ export default function Account() {
           <CardTitle>Profile</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="text-sm space-y-1">
-            <p>
-              <span className="text-muted-foreground">Name: </span>
-              {[supabaseUser?.firstName, supabaseUser?.lastName].filter(Boolean).join(" ") || "Not set"}
-            </p>
-            <p className="break-all">
-              <span className="text-muted-foreground">Email: </span>
-              {user?.email}
-            </p>
+          <p className="text-sm break-all">
+            <span className="text-muted-foreground">Email: </span>
+            {user?.email}
+          </p>
+
+          <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="first-name">First name</Label>
+                <Input
+                  id="first-name"
+                  autoComplete="given-name"
+                  value={firstName}
+                  onChange={(e) => {
+                    setFirstName(e.target.value);
+                    setNameMessage({ type: "", text: "" });
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last-name">Last name</Label>
+                <Input
+                  id="last-name"
+                  autoComplete="family-name"
+                  value={lastName}
+                  onChange={(e) => {
+                    setLastName(e.target.value);
+                    setNameMessage({ type: "", text: "" });
+                  }}
+                />
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={saveName}
+              disabled={firstName === (supabaseUser?.firstName || "") && lastName === (supabaseUser?.lastName || "")}
+            >
+              Save name
+            </Button>
+            {nameMessage.type === "error" && <ErrorMessage message={nameMessage.text} />}
+            {nameMessage.type === "success" && (
+              <p className="text-sm text-green-700 dark:text-green-400">{nameMessage.text}</p>
+            )}
           </div>
 
           <div className="space-y-2">

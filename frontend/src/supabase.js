@@ -31,6 +31,9 @@ export async function registerEmailPassword(email, password, firstName, lastName
         last_name: lastName,
         full_name: `${firstName} ${lastName}`.trim(),
       },
+      // Without this the confirmation link goes to Supabase's Site URL (the live site),
+      // even when signing up on localhost or staging
+      emailRedirectTo: window.location.origin,
     },
   });
   if (error) throw error;
@@ -41,6 +44,10 @@ export async function registerEmailPassword(email, password, firstName, lastName
 export async function loginWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
+    // Come back to whichever copy of the app started sign-in (localhost, staging, or prod).
+    // The origin must be in Supabase's Authentication > URL Configuration > Redirect URLs,
+    // or Supabase silently falls back to the Site URL.
+    options: { redirectTo: window.location.origin },
   });
   if (error) throw error;
   return { user: data.user };
